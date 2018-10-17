@@ -2,6 +2,8 @@ package com.gaosiedu.myapplication;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -9,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    Handler h = new Handler() {
+    Handler h = new Handler(Looper.getMainLooper()) {
     };
 
     // Used to load the 'native-lib' library on application startup.
@@ -44,7 +46,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void call1() {
-        h.post(this::call);
+    private void callMethod() {
+        Log.e("TAG", "callMethod");
+        h.post(() -> call());
     }
 }

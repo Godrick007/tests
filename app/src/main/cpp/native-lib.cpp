@@ -1,7 +1,7 @@
 #include <jni.h>
 #include <string>
 #include "pthread.h"
-#include "android/log.h"
+#include "androidLog.h"
 #include "unistd.h"
 
 void func();
@@ -73,9 +73,22 @@ void func() {
 
     jclass clz = env->GetObjectClass(obj);
 
-    jmethodID mId = env->GetMethodID(clz, "call1", "()V");
+//    jclass clz = env->FindClass("com/gaosiedu/myapplication/MainActivity/nativeCallThread");
+
+
+
+    LOGE("TAG", "class is found");
+
+
+    jmethodID mId = env->GetMethodID(clz, "callMethod", "()V");
+
+    LOGE("TAG", "methodID is found");
 
     env->CallVoidMethod(obj, mId);
 
+    LOGE("TAG", "run method");
+
     jvm->DetachCurrentThread();
+
+    LOGE("TAG", "run DetachCurrentThread");
 }
