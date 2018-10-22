@@ -1,6 +1,7 @@
 #include "jni.h"
 #include "string.h"
 #include "include/androidLog.h"
+#include "pthread.h"
 
 extern "C"
 {
@@ -66,4 +67,62 @@ Java_com_godrick_ffmpeglib_NativeTest_getString(JNIEnv *env, jobject instance) {
     }
 
     return env->NewStringUTF(info);
+}
+
+void *func(void *data);
+
+void func1(void *data);
+
+JavaVM *jvm;
+jobject jobj;
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_thread1(JNIEnv *env, jobject instance) {
+
+
+    jobj = env->NewGlobalRef(instance);
+
+    pthread_t pthread;
+
+    pthread = pthread_create(&pthread, NULL, &func, NULL);
+
+    pthread_exit(&pthread);
+}
+
+
+JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    jvm = vm;
+    return JNI_VERSION_1_6;
+}
+
+void *func(void *data) {
+    LOGE("ndk", "test func");
+}
+
+
+void func1(void *data) {
+
+    LOGE("ndk", "test func");
+
+    JNIEnv *env;
+
+    jvm->AttachCurrentThread(&env, NULL);
+
+    LOGE("ndk", "test func1");
+
+    jclass clz = env->GetObjectClass(jobj);
+
+    LOGE("ndk", "test func2");
+
+    jmethodID mId = env->GetMethodID(clz, "call", "()V");
+
+    LOGE("ndk", "test func3");
+
+    env->CallVoidMethod(jobj, mId);
+
+
+    LOGE("ndk", "test func4");
+    jvm->DestroyJavaVM();
+
 }
