@@ -46,6 +46,8 @@ public class NativeTest {
 
     public native void thread1();
 
+    public native void thread2();
+
     public void call() {
 //        handler.post(() -> {
 //            Toast.makeText(context, "haha", Toast.LENGTH_SHORT).show();

@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        new Thread(() -> test.thread1()).start();
 
-        test.thread1();
+        test.thread2();
     }
 
 
