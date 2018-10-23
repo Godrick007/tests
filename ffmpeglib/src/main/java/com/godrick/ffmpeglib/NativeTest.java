@@ -55,7 +55,13 @@ public class NativeTest {
 
     }
 
+    public void start() {
+        new Thread(this::native_start).start();
+    }
+
     public native void native_prepared(String source);
+
+    public native void native_start();
 
 
     public void onNativeCallPrepared() {

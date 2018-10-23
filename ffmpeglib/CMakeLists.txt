@@ -24,7 +24,7 @@ add_library( # Sets the name of the library.
 
         # Provides a relative path to your source file(s).
         ../ffmpeglib/src/main/cpp/enter.cpp
-        src/main/cpp/Ffmpeg.cpp
+        ../ffmpeglib/src/main/cpp/Ffmpeg.cpp
         ../ffmpeglib/src/main/cpp/Audio.cpp
         ../ffmpeglib/src/main/cpp/CallJava.cpp)
 

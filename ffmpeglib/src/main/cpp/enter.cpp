@@ -25,7 +25,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     javaVm = vm;
 
     JNIEnv *env;
-    if (vm->GetEnv((void **) (env), JNI_VERSION_1_4) != JNI_OK) {
+    if (vm->GetEnv((void **) (&env), JNI_VERSION_1_4) != JNI_OK) {
         return result;
     }
 
@@ -50,5 +50,16 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1prepared(JNIEnv *env, jobject inst
     ffmpeg->prepared();
 
 
-    env->ReleaseStringUTFChars(source_, source);
+//    env->ReleaseStringUTFChars(source_, source);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1start(JNIEnv *env, jobject instance) {
+
+    // TODO
+    if (ffmpeg != NULL) {
+        ffmpeg->start();
+    }
+
 }

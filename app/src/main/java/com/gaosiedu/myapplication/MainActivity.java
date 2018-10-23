@@ -20,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
         test = new NativeTest(this);
         test.setOnSourcePreparedListener(() -> {
             Log.e("ffmpeg", "prepared is cool");
+            test.start();
         });
     }
 

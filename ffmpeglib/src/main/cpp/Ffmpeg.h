@@ -19,7 +19,7 @@ class Ffmpeg {
 public:
     CallJava *callJava = NULL;
     const char *url = NULL;
-    pthread_t *threadDecode;
+    pthread_t threadDecode;
     AVFormatContext *pFormatContext = NULL;
     Audio *audio = NULL;
 
@@ -34,6 +34,9 @@ public:
     void decodeFfmpegThread();
 
     void setAudio(Audio *audio);
+
+    void start();
+
 };
 
 
