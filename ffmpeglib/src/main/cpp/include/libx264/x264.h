@@ -448,7 +448,7 @@ typedef struct x264_param_t
         int         b_stat_read;    /* Read stat from psz_stat_in and use it */
         char        *psz_stat_in;   /* input filename (in UTF-8) of the 2pass stats file */
 
-        /* 2pass params (same as ffmpeg ones) */
+        /* 2pass params (same as Ffmpeg ones) */
         float       f_qcompress;    /* 0.0 => cbr, 1.0 => constant qp */
         float       f_qblur;        /* temporally blur quants */
         float       f_complexity_blur; /* temporally blur complexity */
