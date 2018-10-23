@@ -10,6 +10,7 @@
 
 #endif //TESTS_ANDROIDLOG_H
 
+#define LOG_DEBUG 1
 
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,__VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,__VA_ARGS__)

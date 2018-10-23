@@ -1,27 +1,16 @@
 package com.godrick.ffmpeglib;
 
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
+
+import com.godrick.ffmpeglib.listeners.OnSourcePreparedListener;
 
 
 public class NativeTest {
 
     private Context context;
 
-    Handler handler = new Handler(Looper.getMainLooper()) {
-
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            if (msg.what == 0) {
-                Toast.makeText(context, "haha", Toast.LENGTH_SHORT).show();
-            }
-        }
-    };
 
     static {
         System.loadLibrary("native-lib");
@@ -36,26 +25,43 @@ public class NativeTest {
 
     }
 
+
+    private String source;
+
+    private OnSourcePreparedListener listener;
+
+
     public NativeTest(Context context) {
         this.context = context;
     }
 
-    public native void nativeCodeTest();
 
-    public native String getString();
+    public void setSource(String url) {
+        this.source = url;
+    }
 
-    public native void thread1();
+    public void setOnSourcePreparedListener(OnSourcePreparedListener listener) {
+        this.listener = listener;
+    }
 
-    public void call() {
-//        handler.post(() -> {
-//            Toast.makeText(context, "haha", Toast.LENGTH_SHORT).show();
-//        });
+    public void prepared() {
 
-//        Message message = handler.obtainMessage();
-//        handler.sendEmptyMessage(0);
+        if (TextUtils.isEmpty(source)) {
+            Log.e("Ffmpeg", "source is empty");
+            return;
+        }
 
-        Log.e("java", "call is called");
+        new Thread(() -> native_prepared(source)).start();
 
+    }
+
+    public native void native_prepared(String source);
+
+
+    public void onNativeCallPrepared() {
+        if (listener != null) {
+            listener.prepared();
+        }
     }
 
 }

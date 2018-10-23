@@ -23,7 +23,10 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        ../ffmpeglib/src/main/cpp/ffmpeg.cpp)
+        ../ffmpeglib/src/main/cpp/enter.cpp
+        src/main/cpp/Ffmpeg.cpp
+        ../ffmpeglib/src/main/cpp/Audio.cpp
+        ../ffmpeglib/src/main/cpp/CallJava.cpp)
 
 
 # Searches for a specified prebuilt library and stores the path as a
