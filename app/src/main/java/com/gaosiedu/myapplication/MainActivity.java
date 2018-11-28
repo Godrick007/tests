@@ -1,6 +1,9 @@
 package com.gaosiedu.myapplication;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 
@@ -26,8 +29,15 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void begin(View view) {
-        test.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
-        test.prepared();
+
+        if(PackageManager.PERMISSION_GRANTED == checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)){
+            test.setSource(Environment.getExternalStorageDirectory().getAbsolutePath() + "/1.mp3");
+            test.prepared();
+        }else{
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
+        }
+
+
     }
 
 

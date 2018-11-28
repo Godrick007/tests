@@ -8,6 +8,7 @@
 #include "pthread.h"
 #include "CallJava.h"
 #include "Audio.h"
+#include "PlayStatus.h"
 
 extern "C" {
 # include<libavformat/avformat.h>
@@ -22,9 +23,10 @@ public:
     pthread_t threadDecode;
     AVFormatContext *pFormatContext = NULL;
     Audio *audio = NULL;
+    PlayStatus *playStatus;
 
 public:
-    Ffmpeg(CallJava *cj, const char *url);
+    Ffmpeg(PlayStatus *playStatus,CallJava *cj, const char *url);
 
     ~Ffmpeg();
 

@@ -4,7 +4,7 @@
 #include "pthread.h"
 #include "CallJava.h"
 #include "Ffmpeg.h"
-
+#include "PlayStatus.h"
 extern "C"
 {
 #include "include/libx264/x264.h"
@@ -17,6 +17,7 @@ extern "C"
 JavaVM *javaVm = NULL;
 CallJava *callJava = NULL;
 Ffmpeg *ffmpeg = NULL;
+PlayStatus *playStatus = NULL;
 
 extern "C"
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -44,7 +45,13 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1prepared(JNIEnv *env, jobject inst
         if (callJava == NULL) {
             callJava = new CallJava(javaVm, env, &instance);
         }
-        ffmpeg = new Ffmpeg(callJava, source);
+
+        if(!playStatus)
+        {
+            playStatus = new PlayStatus();
+        }
+
+        ffmpeg = new Ffmpeg(playStatus,callJava, source);
     }
 
     ffmpeg->prepared();

@@ -1,0 +1,146 @@
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_lovepoem_opensltest_MainActivity_play(JNIEnv *env, jobject instance, jstring url_) {
+    const char *url = env->GetStringUTFChars(url_, 0);
+
+    //read pcm file
+    pcmFile = fopen(url,"r");
+    if(!pcmFile)
+    {
+        LOGE("%s","open file error");
+        return;
+    }
+
+    out_buffer = (uint8_t *)(malloc(BUFFER_LENGTH));
+
+
+    SLresult result;
+
+
+    //engine
+    result = slCreateEngine(&engineObject,0, NULL, 0, NULL, NULL);
+    LOGE("slCreateEngine is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+
+    result = (*engineObject)->Realize(engineObject,SL_BOOLEAN_FALSE);
+    LOGE("engine Realize is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    result = (*engineObject)->GetInterface(engineObject,SL_IID_ENGINE,&engineEngine);
+    LOGE("engine get interface is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    //mix
+    const SLInterfaceID ids[1] = {SL_IID_ENVIRONMENTALREVERB};
+    const SLboolean req[1] = {SL_BOOLEAN_FALSE};
+
+    result =(*engineEngine)->CreateOutputMix(engineEngine,&outputMixObject,1,ids,req);
+    LOGE("CreateOutputMix is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    result =(*outputMixObject)->Realize(outputMixObject,SL_BOOLEAN_FALSE);
+    LOGE("mix realize is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+
+
+
+
+    result = (*outputMixObject)->GetInterface(outputMixObject,SL_IID_ENVIRONMENTALREVERB,&outputMixEnvironmentReverb);
+
+    LOGE("output mix object GetInterface is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
+
+    result = (*outputMixEnvironmentReverb)->SetEnvironmentalReverbProperties(outputMixEnvironmentReverb,&reverbSettings);
+
+    LOGE("SetEnvironmentalReverbProperties is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
+    SLDataLocator_OutputMix outputMix = {SL_DATALOCATOR_OUTPUTMIX,outputMixObject};
+
+    //data source
+    SLDataLocator_AndroidSimpleBufferQueue android_queue = {
+            SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
+            2
+    };
+
+    SLDataFormat_PCM pcm={
+            SL_DATAFORMAT_PCM,//播放pcm格式的数据
+            2,//2个声道（立体声）
+            SL_SAMPLINGRATE_44_1,//44100hz的频率
+            SL_PCMSAMPLEFORMAT_FIXED_16,//位数 16位
+            SL_PCMSAMPLEFORMAT_FIXED_16,//和位数一致就行
+            SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,//立体声（前左前右）
+            SL_BYTEORDER_LITTLEENDIAN//结束标志
+    };
+
+    SLDataSource slDataSource = {
+            &android_queue,
+            &pcm
+    };
+
+    SLDataSink audioSink = {&outputMix,NULL};
+
+    //player
+    const SLInterfaceID id[1] = {SL_IID_BUFFERQUEUE};
+    const SLboolean bools[1] = {SL_BOOLEAN_TRUE};
+
+
+    result = (*engineEngine)->CreateAudioPlayer(engineEngine,&pcmPlayerObject,&slDataSource,&audioSink,1,id,bools);
+    LOGE("CreateAudioPlayer is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
+    result = (*pcmPlayerObject)->Realize(pcmPlayerObject,SL_BOOLEAN_FALSE);
+    LOGE("CreateAudioPlayer realize is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
+    result = (*pcmPlayerObject)->GetInterface(pcmPlayerObject,SL_IID_PLAY,&pcmPlayerPlay);
+    LOGE("CreateAudioPlayer GetInterface is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
+
+
+    //player state
+    result = (*pcmPlayerObject)->GetInterface(pcmPlayerObject,SL_IID_ANDROIDSIMPLEBUFFERQUEUE,&pcmBufferQueue);
+
+    LOGE("CreateAudioPlayer GetInterface buffer queue is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
+    result = (*pcmBufferQueue)->RegisterCallback(pcmBufferQueue,pcmBufferCallback,NULL);
+
+    LOGE("RegisterCallback is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
+    result = (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay,SL_PLAYSTATE_PLAYING);
+
+    LOGE("SetPlayState is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
+
+    pcmBufferCallback(pcmBufferQueue,NULL);
+
+    env->ReleaseStringUTFChars(url_, url);
+}
