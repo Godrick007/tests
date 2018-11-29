@@ -13,6 +13,7 @@ extern "C"
 
 }
 
+bool nativeExit = true;
 
 JavaVM *javaVm = NULL;
 CallJava *callJava = NULL;
@@ -68,5 +69,58 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1start(JNIEnv *env, jobject instanc
     if (ffmpeg != NULL) {
         ffmpeg->start();
     }
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1resume(JNIEnv *env, jobject instance) {
+
+    if(ffmpeg)
+        ffmpeg->resume();
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1pause(JNIEnv *env, jobject instance) {
+
+    if(ffmpeg)
+        ffmpeg->pause();
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1stop(JNIEnv *env, jobject instance) {
+
+    if(!nativeExit)
+    {
+        return;
+    }
+
+    nativeExit = false;
+
+    if(ffmpeg)
+        ffmpeg->release();
+
+    delete ffmpeg;
+
+    ffmpeg = NULL;
+
+    if(callJava)
+    {
+        delete(callJava);
+        callJava = NULL;
+    }
+
+
+    if(playStatus)
+    {
+        delete(playStatus);
+        playStatus = NULL;
+    }
+
+    nativeExit = true;
 
 }

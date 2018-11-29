@@ -12,6 +12,8 @@ public:
 
     bool exit;
 
+    bool load = true;
+
 public:
 
     PlayStatus();

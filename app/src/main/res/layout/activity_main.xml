@@ -7,12 +7,41 @@
     tools:context=".MainActivity">
 
 
+    <TextView
+        android:id="@+id/tv_progress"
+        android:text="00:00/00:00"
+        android:layout_margin="10dp"
+        android:textColor="#222222"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
     <Button
         android:onClick="begin"
         android:textAllCaps="false"
-        android:text="begin"
+        android:text="play"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <Button
+        android:onClick="pause"
+        android:textAllCaps="false"
+        android:text="pause"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:onClick="resume"
+        android:textAllCaps="false"
+        android:text="resume"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:onClick="stop"
+        android:textAllCaps="false"
+        android:text="stop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
 </LinearLayout>

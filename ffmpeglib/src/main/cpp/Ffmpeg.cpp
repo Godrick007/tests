@@ -1,3 +1,4 @@
+
 #include "Ffmpeg.h"
 
 
@@ -5,6 +6,7 @@ Ffmpeg::Ffmpeg(PlayStatus *playStatus,CallJava *cj, const char *url) {
     this->callJava = cj;
     this->url = url;
     this->playStatus = playStatus;
+    pthread_mutex_init(&mutexInit,NULL);
 }
 
 void *decodeFfmpeg(void *data) {
@@ -17,7 +19,21 @@ void Ffmpeg::prepared() {
     pthread_create(&this->threadDecode, NULL, decodeFfmpeg, this);
 }
 
+
+int AvContextInterruptCallback(void *context)
+{
+    Ffmpeg *instance = static_cast<Ffmpeg *>(context);
+    if(instance->playStatus->exit)
+    {
+        return AVERROR_EOF;
+    }
+    return 0;
+}
+
+
 void Ffmpeg::decodeFfmpegThread() {
+
+    pthread_mutex_lock(&mutexInit);
 
     av_register_all();
     avformat_network_init();
@@ -26,6 +42,9 @@ void Ffmpeg::decodeFfmpegThread() {
         if (LOG_DEBUG) {
             LOGE("ffmpeg", "open url error  -- %s", this->url);
         }
+        callJava->callJavaOnError(100,"can not open url");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
         return;
     }
 
@@ -35,17 +54,25 @@ void Ffmpeg::decodeFfmpegThread() {
         if (LOG_DEBUG) {
             LOGE("ffmpeg", "can not find stream");
         }
+        callJava->callJavaOnError(101,"can find stream");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
         return;
     }
 
+
+    pFormatContext->interrupt_callback.callback = AvContextInterruptCallback;
+    pFormatContext->interrupt_callback.opaque = this;
 
 
     for (int i = 0; i < pFormatContext->nb_streams; i++) {
         if (pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (audio == NULL) {
-                audio = new Audio(playStatus);
+                audio = new Audio(playStatus,pFormatContext->streams[i]->codecpar->sample_rate,callJava);
                 this->audio->streamIndex = i;
                 this->audio->pCodecParameters = pFormatContext->streams[i]->codecpar;
+                this->audio->duration = pFormatContext->duration / AV_TIME_BASE;
+                this->audio->time_base = pFormatContext->streams[i]->time_base;
             }
         }
     }
@@ -56,6 +83,9 @@ void Ffmpeg::decodeFfmpegThread() {
         if (LOG_DEBUG) {
             LOGE("ffmpeg", "can not find decoder");
         }
+        callJava->callJavaOnError(102,"can not find decoder");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
         return;
     }
 
@@ -65,6 +95,9 @@ void Ffmpeg::decodeFfmpegThread() {
         if (LOG_DEBUG) {
             LOGE("ffmpeg", "can not alloc decoder context");
         }
+        callJava->callJavaOnError(103,"can not alloc decoder context");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
         return;
     }
 
@@ -72,6 +105,9 @@ void Ffmpeg::decodeFfmpegThread() {
         if (LOG_DEBUG) {
             LOGE("ffmpeg", "can not fill decoder context");
         }
+        callJava->callJavaOnError(104,"can not fill decoder context");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
         return;
     }
 
@@ -79,10 +115,14 @@ void Ffmpeg::decodeFfmpegThread() {
         if (LOG_DEBUG) {
             LOGE("ffmpeg", "can not open audio stream");
         }
+        callJava->callJavaOnError(105,"can not open audio stream");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
         return;
     }
 
-    callJava->callJavaOnpreparedThread();
+    callJava->callJavaOnPreparedThread();
+    pthread_mutex_unlock(&mutexInit);
 }
 
 void Ffmpeg::setAudio(Audio *audio) {
@@ -100,8 +140,6 @@ void Ffmpeg::start() {
     audio->play();
 
 
-    int count = 0;
-
     while (playStatus != NULL && !playStatus->exit) {
 
         AVPacket *pPacket = av_packet_alloc();
@@ -109,12 +147,7 @@ void Ffmpeg::start() {
         if (av_read_frame(this->pFormatContext, pPacket) == 0) {
 
             if (pPacket->stream_index == audio->streamIndex) {
-//            if (true) {
                 //解码操作
-                count++;
-                if (LOG_DEBUG) {
-                    LOGE("ffmpeg", "decode %d frame",count);
-                }
                 audio->queue->putAvPacket(pPacket);
             }else{
                 av_packet_free(&pPacket);
@@ -144,9 +177,94 @@ void Ffmpeg::start() {
         }
 
     }
+
+    exit = true;
+
     if (LOG_DEBUG) {
         LOGE("ffmpeg", "decode finish");
     }
 
 
+}
+
+void Ffmpeg::pause() {
+
+    if(audio)
+        audio->pause();
+}
+
+void Ffmpeg::resume() {
+
+    if(audio)
+        audio->resume();
+
+}
+
+void Ffmpeg::stop() {
+
+}
+
+void Ffmpeg::release() {
+
+    if(playStatus->exit)
+        return;
+
+    playStatus->exit = true;
+
+
+    pthread_mutex_lock(&mutexInit);
+
+
+    int sleepCount = 0;
+
+    while(!exit)
+    {
+        if(sleepCount > 1000)
+        {
+            exit = true;
+        }
+
+        if(LOG_DEBUG)
+        {
+            LOGE("ffmpeg","wait ffmpeg exit %d",sleepCount);
+        }
+
+        sleepCount ++ ;
+
+        av_usleep(1000 * 10);
+
+    }
+
+    if(audio)
+    {
+        audio->release();
+        delete audio;
+        audio = NULL;
+    }
+
+    if(pFormatContext)
+    {
+        avformat_close_input(&pFormatContext);
+        avformat_free_context(pFormatContext);
+        pFormatContext = NULL;
+    }
+
+    if(playStatus)
+    {
+        playStatus = NULL;
+    }
+
+
+    if(callJava)
+    {
+        callJava = NULL;
+    }
+
+    pthread_mutex_unlock(&mutexInit);
+
+    pthread_mutex_destroy(&mutexInit);
+}
+
+Ffmpeg::~Ffmpeg() {
+    LOGE("release","Ffmpeg's release is called");
 }

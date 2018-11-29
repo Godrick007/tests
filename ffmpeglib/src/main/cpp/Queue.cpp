@@ -11,7 +11,10 @@ Queue::Queue(PlayStatus *playStatus) {
 }
 
 Queue::~Queue() {
-
+    LOGE("release","Queue's release is called");
+    clearAVPacket();
+    pthread_mutex_destroy(&mutexPacket);
+    pthread_cond_destroy(&condPacket);
 }
 
 int Queue::putAvPacket(AVPacket *packet) {
@@ -20,10 +23,6 @@ int Queue::putAvPacket(AVPacket *packet) {
 
     queueAVPacket.push(packet);
 
-    if(LOG_DEBUG)
-    {
-        LOGE("ffmpeg","put a avpacket in queue and queue's size is %d",queueAVPacket.size());
-    }
 
     pthread_cond_signal(&condPacket);
     pthread_mutex_unlock(&mutexPacket);
@@ -48,10 +47,6 @@ int Queue::getAvPacket(AVPacket *packet) {
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
-            if(LOG_DEBUG)
-            {
-                LOGE("ffmpeg","get a avpacket form queue and queue's size is %d",queueAVPacket.size());
-            }
             break;
         }
         else
@@ -73,4 +68,23 @@ int Queue::getQueueSize() {
     pthread_mutex_unlock(&mutexPacket);
 
     return size;
+}
+
+void Queue::clearAVPacket() {
+
+   pthread_cond_signal(&condPacket);
+   pthread_mutex_lock(&mutexPacket);
+
+   while(queueAVPacket.empty())
+   {
+       AVPacket *packet = queueAVPacket.front();
+       queueAVPacket.pop();
+       av_packet_free(&packet);
+       av_free(packet);
+       packet = NULL;
+   }
+
+   pthread_mutex_unlock(&mutexPacket);
+
+
 }

@@ -4,6 +4,10 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.godrick.ffmpeglib.listeners.OnErrorListener;
+import com.godrick.ffmpeglib.listeners.OnLoadListener;
+import com.godrick.ffmpeglib.listeners.OnPauseResumeListener;
+import com.godrick.ffmpeglib.listeners.OnProgressListener;
 import com.godrick.ffmpeglib.listeners.OnSourcePreparedListener;
 
 
@@ -28,8 +32,15 @@ public class NativeTest {
 
     private String source;
 
-    private OnSourcePreparedListener listener;
+    private OnSourcePreparedListener onSourcePreparedListener;
 
+    private OnLoadListener onLoadListener;
+
+    private OnPauseResumeListener onPauseResumeListener;
+
+    private OnProgressListener onProgressListener;
+
+    private OnErrorListener onErrorListener;
 
     public NativeTest(Context context) {
         this.context = context;
@@ -41,7 +52,23 @@ public class NativeTest {
     }
 
     public void setOnSourcePreparedListener(OnSourcePreparedListener listener) {
-        this.listener = listener;
+        this.onSourcePreparedListener = listener;
+    }
+
+    public void setOnLoadListener(OnLoadListener onLoadListener) {
+        this.onLoadListener = onLoadListener;
+    }
+
+    public void setOnPauseResumeListener(OnPauseResumeListener onPauseResumeListener) {
+        this.onPauseResumeListener = onPauseResumeListener;
+    }
+
+    public void setOnProgressListener(OnProgressListener onProgressListener){
+        this.onProgressListener = onProgressListener;
+    }
+
+    public void setOnErrorListener(OnErrorListener onErrorListener) {
+        this.onErrorListener = onErrorListener;
     }
 
     public void prepared() {
@@ -59,15 +86,65 @@ public class NativeTest {
         new Thread(this::native_start).start();
     }
 
-    public native void native_prepared(String source);
+    public void pause(){
 
-    public native void native_start();
+        native_pause();
 
+        if(onPauseResumeListener != null){
+            onPauseResumeListener.onPause(true);
+        }
+
+    }
+
+    public void stop(){
+
+        new Thread(this::native_stop).start();
+    }
+
+
+    public void resume(){
+
+        native_resume();
+
+        if(onPauseResumeListener != null){
+            onPauseResumeListener.onPause(false);
+        }
+
+    }
+
+    private native void native_prepared(String source);
+
+    private native void native_start();
+
+    private native void native_pause();
+
+    private native void native_resume();
+
+    private native void native_stop();
 
     public void onNativeCallPrepared() {
-        if (listener != null) {
-            listener.prepared();
+        if (onSourcePreparedListener != null) {
+            onSourcePreparedListener.prepared();
         }
     }
 
+    public void onNativeCallLoad(boolean load){
+        if(onLoadListener != null){
+            onLoadListener.onLoad(load);
+        }
+    }
+
+
+    public void onNativeCallProgress(int current,int total){
+        if(onProgressListener != null){
+            onProgressListener.onProgress(current,total);
+        }
+    }
+
+    public void onNativeCallError(int code,String msg){
+        native_stop();
+        if(onErrorListener != null){
+            onErrorListener.onError(code,msg);
+        }
+    }
 }

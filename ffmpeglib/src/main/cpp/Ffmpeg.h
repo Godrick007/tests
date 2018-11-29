@@ -11,7 +11,8 @@
 #include "PlayStatus.h"
 
 extern "C" {
-# include<libavformat/avformat.h>
+#include <libavutil/time.h>
+#include <libavformat/avformat.h>
 };
 
 
@@ -24,6 +25,11 @@ public:
     AVFormatContext *pFormatContext = NULL;
     Audio *audio = NULL;
     PlayStatus *playStatus;
+
+    pthread_mutex_t mutexInit ;
+
+    bool exit = false;
+
 
 public:
     Ffmpeg(PlayStatus *playStatus,CallJava *cj, const char *url);
@@ -38,6 +44,14 @@ public:
     void setAudio(Audio *audio);
 
     void start();
+
+    void pause();
+
+    void resume();
+
+    void stop();
+
+    void release();
 
 };
 

@@ -17,13 +17,22 @@ public:
     jobject jobj;
 
     jmethodID mid_prepared;
+    jmethodID mid_onLoad;
+    jmethodID mid_onProgress;
+    jmethodID mid_onError;
 
 public:
     CallJava(JavaVM *jvm, JNIEnv *jniEnv,jobject *obj);
     ~CallJava();
 
-    void callJavaOnpreparedUIThread();
-    void callJavaOnpreparedThread();
+    void callJavaOnPreparedUIThread();
+    void callJavaOnPreparedThread();
+    void callJavaOnLoadUIThread(bool load);
+    void callJavaOnLoad(bool load);
+    void callJavaOnProgressUIThread(int current,int total);
+    void callJavaOnProgress(int current,int total);
+    void callJavaOnErrorUIThread(int code,char* msg);
+    void callJavaOnError(int code,char* msg);
 };
 
 
