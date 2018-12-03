@@ -493,7 +493,42 @@ void Audio::setVolume(int percent) {
 
     if(pcmPlayerVolume)
     {
-        (*pcmPlayerVolume)->SetVolumeLevel(pcmPlayerVolume,(100-percent) * -50);
+
+
+        int div = 0;
+
+        if(percent > 30)
+        {
+            div = 22;
+        }
+        else if(percent > 25)
+        {
+            div = 25;
+        }
+        else if(percent > 20)
+        {
+            div = 28;
+        }
+        else if(percent > 15)
+        {
+            div = 30;
+        }
+        else if(percent > 10)
+        {
+            div = 33;
+        }
+        else if(percent > 5)
+        {
+            div = 35;
+        }else if(percent > 0)
+        {
+            div = 40;
+        } else
+        {
+            div = 100;
+        }
+
+        (*pcmPlayerVolume)->SetVolumeLevel(pcmPlayerVolume,(100-percent) * - div);
     }
 
 }
