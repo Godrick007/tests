@@ -30,6 +30,9 @@ public:
 
     bool exit = false;
 
+    int duration;
+
+    pthread_mutex_t mutexSeek;
 
 public:
     Ffmpeg(PlayStatus *playStatus,CallJava *cj, const char *url);
@@ -52,6 +55,10 @@ public:
     void stop();
 
     void release();
+
+    void seek(int64_t second);
+
+    void setVolume(int percent);
 
 };
 

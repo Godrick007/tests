@@ -20,6 +20,9 @@ CallJava *callJava = NULL;
 Ffmpeg *ffmpeg = NULL;
 PlayStatus *playStatus = NULL;
 
+pthread_t threadStart;
+
+
 extern "C"
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
@@ -61,13 +64,24 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1prepared(JNIEnv *env, jobject inst
 //    env->ReleaseStringUTFChars(source_, source);
 }
 
+
+void *startCallback(void * data)
+{
+    Ffmpeg *ffmpeg = static_cast<Ffmpeg *>(data);
+    ffmpeg->start();
+    pthread_exit(&threadStart);
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_godrick_ffmpeglib_NativeTest_native_1start(JNIEnv *env, jobject instance) {
 
     // TODO
     if (ffmpeg != NULL) {
-        ffmpeg->start();
+//        ffmpeg->start();
+
+        pthread_create(&threadStart,NULL,startCallback,ffmpeg);
+
     }
 
 }
@@ -99,6 +113,9 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1stop(JNIEnv *env, jobject instance
         return;
     }
 
+    jclass clz = env->GetObjectClass(instance);
+    jmethodID jmid =  env->GetMethodID(clz,"onNativeCallNext","()V");
+
     nativeExit = false;
 
     if(ffmpeg)
@@ -122,5 +139,43 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1stop(JNIEnv *env, jobject instance
     }
 
     nativeExit = true;
+
+    env->CallVoidMethod(instance,jmid);
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1seek(JNIEnv *env, jobject instance, jint second) {
+
+    if(ffmpeg){
+        ffmpeg->seek(second);
+    }
+
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1getDuration(JNIEnv *env, jobject instance) {
+
+    // TODO
+
+    if(ffmpeg)
+    {
+        return ffmpeg->duration;
+    }
+    return 0;
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1setVolume(JNIEnv *env, jobject instance,
+                                                        jint percent) {
+
+    if(ffmpeg)
+    {
+        ffmpeg->setVolume(percent);
+    }
 
 }

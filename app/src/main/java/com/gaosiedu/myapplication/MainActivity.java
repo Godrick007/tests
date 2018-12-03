@@ -8,9 +8,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.godrick.ffmpeglib.NativeTest;
+import com.godrick.ffmpeglib.listeners.OnCompleteListener;
 import com.godrick.ffmpeglib.util.TimeUtil;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,6 +22,10 @@ public class MainActivity extends AppCompatActivity {
     NativeTest test;
 
     TextView textView;
+
+    SeekBar seekBar;
+
+    private int volume = 0;
 
      Handler handler = new Handler(){
         @Override
@@ -52,10 +58,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         test.setOnLoadListener(load->{
-//            if(load)
-//                Log.e("java","loading");
-//            else
-//                Log.e("java","playing");
+            if(load)
+                Log.e("java","loading");
+            else
+                Log.e("java","playing");
         });
 
         test.setOnPauseResumeListener(pause->{
@@ -77,14 +83,42 @@ public class MainActivity extends AppCompatActivity {
 
         textView = findViewById(R.id.tv_progress);
 
+        test.setOnCompleteListener(new OnCompleteListener() {
+            @Override
+            public void onComplete() {
+                Log.e("java","play complete");
+            }
+        });
+
+        seekBar = findViewById(R.id.seekbar);
+
+        seekBar.setMax(100);
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                test.setVolume(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
     }
 
 
     public void begin(View view) {
 
         if(PackageManager.PERMISSION_GRANTED == checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)){
-            test.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
-//            test.setSource(Environment.getExternalStorageDirectory().getAbsolutePath() + "/1.mp3");
+//            test.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
+            test.setSource(Environment.getExternalStorageDirectory().getAbsolutePath() + "/1.mp3");
 //            test.setSource("");
             test.prepared();
         }else{
@@ -104,5 +138,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void stop(View view) { test.stop();
+    }
+
+
+    public void seek(View view) {
+
+        test.seek(200);
+
+    }
+
+    public void next(View view) {
+
+        test.playNext("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
+
     }
 }

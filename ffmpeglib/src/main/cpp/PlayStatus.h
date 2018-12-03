@@ -14,6 +14,8 @@ public:
 
     bool load = true;
 
+    bool seek = false;
+
 public:
 
     PlayStatus();

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.godrick.ffmpeglib.listeners.OnCompleteListener;
 import com.godrick.ffmpeglib.listeners.OnErrorListener;
 import com.godrick.ffmpeglib.listeners.OnLoadListener;
 import com.godrick.ffmpeglib.listeners.OnPauseResumeListener;
@@ -42,6 +43,10 @@ public class NativeTest {
 
     private OnErrorListener onErrorListener;
 
+    private OnCompleteListener onCompleteListener;
+
+    private static boolean playNext = false;
+
     public NativeTest(Context context) {
         this.context = context;
     }
@@ -69,6 +74,10 @@ public class NativeTest {
 
     public void setOnErrorListener(OnErrorListener onErrorListener) {
         this.onErrorListener = onErrorListener;
+    }
+
+    public void setOnCompleteListener(OnCompleteListener onCompleteListener) {
+        this.onCompleteListener = onCompleteListener;
     }
 
     public void prepared() {
@@ -112,6 +121,30 @@ public class NativeTest {
 
     }
 
+    public void seek(int second){
+
+        native_seek(second);
+
+    }
+
+
+    public void playNext(String url){
+        source = url;
+        playNext = true;
+        stop();
+    }
+
+    public int getDuration(){
+        return native_getDuration();
+    }
+
+    public void setVolume(int percent){
+        if(percent >=0 && percent <=100) {
+            native_setVolume(percent);
+        }
+    }
+
+
     private native void native_prepared(String source);
 
     private native void native_start();
@@ -121,6 +154,12 @@ public class NativeTest {
     private native void native_resume();
 
     private native void native_stop();
+
+    private native void native_seek(int second);
+
+    private native int native_getDuration();
+
+    private native void native_setVolume(int percent);
 
     public void onNativeCallPrepared() {
         if (onSourcePreparedListener != null) {
@@ -147,4 +186,22 @@ public class NativeTest {
             onErrorListener.onError(code,msg);
         }
     }
+
+
+    public void onNativeCallComplete(){
+        native_stop();
+        if(onCompleteListener != null){
+            onCompleteListener.onComplete();
+        }
+    }
+
+    public void onNativeCallNext(){
+
+        if(playNext){
+            playNext = false;
+            prepared();
+        }
+
+    }
+
 }

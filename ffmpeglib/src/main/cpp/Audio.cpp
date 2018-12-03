@@ -302,11 +302,11 @@ void Audio::initSLES() {
     SLDataSink audioSink = {&outputMix,NULL};
 
     //player
-    const SLInterfaceID id[1] = {SL_IID_BUFFERQUEUE};
-    const SLboolean bools[1] = {SL_BOOLEAN_TRUE};
+    const SLInterfaceID id[2] = {SL_IID_BUFFERQUEUE,SL_IID_VOLUME};
+    const SLboolean bools[2] = {SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE};
 
 
-    result = (*engineEngine)->CreateAudioPlayer(engineEngine,&pcmPlayerObject,&slDataSource,&audioSink,1,id,bools);
+    result = (*engineEngine)->CreateAudioPlayer(engineEngine,&pcmPlayerObject,&slDataSource,&audioSink,2,id,bools);
     LOGE("ffmpeg","CreateAudioPlayer is %d",result);
 
     assert(result == SL_RESULT_SUCCESS);
@@ -325,6 +325,12 @@ void Audio::initSLES() {
     (void)result;
 
 
+    result = (*pcmPlayerObject)->GetInterface(pcmPlayerObject,SL_IID_VOLUME,&pcmPlayerVolume);
+
+    LOGE("ffmpeg","pcmPlayerVolume GetInterface is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
 
     //player state
     result = (*pcmPlayerObject)->GetInterface(pcmPlayerObject,SL_IID_BUFFERQUEUE,&pcmBufferQueue);
@@ -480,5 +486,14 @@ void Audio::release() {
         callJava = NULL;
     }
 
+
+}
+
+void Audio::setVolume(int percent) {
+
+    if(pcmPlayerVolume)
+    {
+        (*pcmPlayerVolume)->SetVolumeLevel(pcmPlayerVolume,(100-percent) * -50);
+    }
 
 }

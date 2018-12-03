@@ -7,6 +7,7 @@ Ffmpeg::Ffmpeg(PlayStatus *playStatus,CallJava *cj, const char *url) {
     this->url = url;
     this->playStatus = playStatus;
     pthread_mutex_init(&mutexInit,NULL);
+    pthread_mutex_init(&mutexSeek,NULL);
 }
 
 void *decodeFfmpeg(void *data) {
@@ -73,6 +74,7 @@ void Ffmpeg::decodeFfmpegThread() {
                 this->audio->pCodecParameters = pFormatContext->streams[i]->codecpar;
                 this->audio->duration = pFormatContext->duration / AV_TIME_BASE;
                 this->audio->time_base = pFormatContext->streams[i]->time_base;
+                this->duration = audio->duration;
             }
         }
     }
@@ -142,9 +144,26 @@ void Ffmpeg::start() {
 
     while (playStatus != NULL && !playStatus->exit) {
 
+        if(playStatus->seek)
+        {
+            continue;
+        }
+
+        if(audio->queue->getQueueSize() > 40)
+        {
+            continue;
+        }
+
+
         AVPacket *pPacket = av_packet_alloc();
 
-        if (av_read_frame(this->pFormatContext, pPacket) == 0) {
+        pthread_mutex_lock(&mutexSeek);
+
+        int ret = av_read_frame(this->pFormatContext, pPacket);
+
+        pthread_mutex_unlock(&mutexSeek);
+
+        if ( ret == 0) {
 
             if (pPacket->stream_index == audio->streamIndex) {
                 //解码操作
@@ -180,8 +199,9 @@ void Ffmpeg::start() {
 
     exit = true;
 
-    if (LOG_DEBUG) {
-        LOGE("ffmpeg", "decode finish");
+    if(callJava)
+    {
+        callJava->callJavaOnComplete();
     }
 
 
@@ -206,8 +226,6 @@ void Ffmpeg::stop() {
 
 void Ffmpeg::release() {
 
-    if(playStatus->exit)
-        return;
 
     playStatus->exit = true;
 
@@ -267,4 +285,49 @@ void Ffmpeg::release() {
 
 Ffmpeg::~Ffmpeg() {
     LOGE("release","Ffmpeg's release is called");
+    pthread_mutex_destroy(&mutexSeek);
+    pthread_mutex_destroy(&mutexInit);
 }
+
+void Ffmpeg::seek(int64_t second) {
+
+    if(duration <= 0)
+    {
+        return;
+    }
+
+    if(second <=0 || second >= duration)
+    {
+        return;
+    }
+
+    if(audio != NULL)
+    {
+        playStatus->seek = true;
+        audio->queue->clearAVPacket();
+        audio->clock = 0;
+        audio->last_time = 0;
+
+        pthread_mutex_lock(&mutexSeek);
+
+        int64_t rel = second * AV_TIME_BASE;
+
+        avformat_seek_file(pFormatContext,-1,INT64_MIN,rel,INT64_MAX,0);
+
+
+
+        pthread_mutex_unlock(&mutexSeek);
+        playStatus->seek = false;
+    }
+
+}
+
+void Ffmpeg::setVolume(int percent) {
+
+    if(audio)
+    {
+        audio->setVolume(percent);
+    }
+
+}
+

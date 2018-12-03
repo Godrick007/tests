@@ -61,6 +61,7 @@ public:
     SLPlayItf pcmPlayerPlay = NULL;
     SLAndroidSimpleBufferQueueItf  pcmBufferQueue = NULL;
 
+    SLVolumeItf pcmPlayerVolume = NULL;
 
     CallJava *callJava;
 
@@ -85,6 +86,8 @@ public:
     void stop();
 
     void release();
+
+    void setVolume(int percent);
 
 };
 

@@ -24,6 +24,7 @@ CallJava::CallJava(JavaVM *jvm, JNIEnv *jniEnv, jobject *obj) {
     mid_onLoad = jniEnv->GetMethodID(clz,"onNativeCallLoad","(Z)V");
     mid_onProgress = jniEnv->GetMethodID(clz,"onNativeCallProgress","(II)V");
     mid_onError = jniEnv->GetMethodID(clz,"onNativeCallError","(ILjava/lang/String;)V");
+    mid_onComplete = jniEnv->GetMethodID(clz,"onNativeCallComplete","()V");
 }
 
 CallJava::~CallJava() {
@@ -48,6 +49,10 @@ void CallJava::callJavaOnErrorUIThread(int code, char* msg) {
     jstring jmsg = jniEnv->NewStringUTF(msg);
     this->jniEnv->CallVoidMethod(jobj, mid_onError,code,msg);
     this->jniEnv->DeleteLocalRef(jmsg);
+}
+
+void CallJava::callJavaOnCompleteUIThread() {
+    this->jniEnv->CallVoidMethod(jobj, mid_onComplete);
 }
 
 void CallJava::callJavaOnProgress(int current, int total) {
@@ -112,4 +117,22 @@ void CallJava::callJavaOnError(int code, char *msg) {
 
 
     jvm->DetachCurrentThread();
+}
+
+
+
+void CallJava::callJavaOnComplete() {
+
+    JNIEnv *env;
+    if(jvm->AttachCurrentThread(&env, 0 )!= JNI_OK){
+        if(LOG_DEBUG){
+            LOGD("Ffmpeg","get thread jniEnv error");
+        }
+        return;
+    }
+
+    env->CallVoidMethod(this->jobj, mid_onComplete);
+
+    jvm->DetachCurrentThread();
+
 }

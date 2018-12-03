@@ -20,6 +20,7 @@ public:
     jmethodID mid_onLoad;
     jmethodID mid_onProgress;
     jmethodID mid_onError;
+    jmethodID mid_onComplete;
 
 public:
     CallJava(JavaVM *jvm, JNIEnv *jniEnv,jobject *obj);
@@ -33,6 +34,8 @@ public:
     void callJavaOnProgress(int current,int total);
     void callJavaOnErrorUIThread(int code,char* msg);
     void callJavaOnError(int code,char* msg);
+    void callJavaOnCompleteUIThread();
+    void callJavaOnComplete();
 };
 
 
