@@ -12,6 +12,13 @@ Audio::Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava) {
     this->callJava = callJava;
     queue = new Queue(playStatus);
     buffer = (uint8_t *)(av_malloc(sample_rate * 2 * 2));
+
+    sampleBuffer = static_cast<SAMPLETYPE *>(malloc(sample_rate * 2 * 2));
+    soundTouch = new SoundTouch();
+
+    soundTouch->setSampleRate(sample_rate);
+    soundTouch->setChannels(2);
+
 }
 
 Audio::~Audio() {
@@ -302,11 +309,11 @@ void Audio::initSLES() {
     SLDataSink audioSink = {&outputMix,NULL};
 
     //player
-    const SLInterfaceID id[2] = {SL_IID_BUFFERQUEUE,SL_IID_VOLUME};
-    const SLboolean bools[2] = {SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE};
+    const SLInterfaceID id[3] = {SL_IID_BUFFERQUEUE,SL_IID_VOLUME,SL_IID_MUTESOLO};
+    const SLboolean bools[3] = {SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE};
 
 
-    result = (*engineEngine)->CreateAudioPlayer(engineEngine,&pcmPlayerObject,&slDataSource,&audioSink,2,id,bools);
+    result = (*engineEngine)->CreateAudioPlayer(engineEngine,&pcmPlayerObject,&slDataSource,&audioSink,3,id,bools);
     LOGE("ffmpeg","CreateAudioPlayer is %d",result);
 
     assert(result == SL_RESULT_SUCCESS);
@@ -331,6 +338,15 @@ void Audio::initSLES() {
 
     assert(result == SL_RESULT_SUCCESS);
     (void)result;
+
+
+    result = (*pcmPlayerObject)->GetInterface(pcmPlayerObject,SL_IID_MUTESOLO,&pcmPlayerMute);
+
+    LOGE("ffmpeg","pcmPlayerVolume GetInterface is %d",result);
+
+    assert(result == SL_RESULT_SUCCESS);
+    (void)result;
+
 
     //player state
     result = (*pcmPlayerObject)->GetInterface(pcmPlayerObject,SL_IID_BUFFERQUEUE,&pcmBufferQueue);
@@ -531,4 +547,44 @@ void Audio::setVolume(int percent) {
         (*pcmPlayerVolume)->SetVolumeLevel(pcmPlayerVolume,(100-percent) * - div);
     }
 
+}
+
+//0 has two  1,left 2,right
+void Audio::switchChannel(int channel) {
+
+    if(!pcmPlayerMute)
+        return;
+
+    switch (channel)
+    {
+        case 0:
+                (*pcmPlayerMute)->SetChannelMute(pcmPlayerMute,0, SL_BOOLEAN_FALSE);
+                (*pcmPlayerMute)->SetChannelMute(pcmPlayerMute,1, SL_BOOLEAN_FALSE);
+
+            break;
+        case 1:
+                (*pcmPlayerMute)->SetChannelMute(pcmPlayerMute,0, SL_BOOLEAN_FALSE);
+                (*pcmPlayerMute)->SetChannelMute(pcmPlayerMute,1, SL_BOOLEAN_TRUE);
+            break;
+        case 2:
+                (*pcmPlayerMute)->SetChannelMute(pcmPlayerMute,0, SL_BOOLEAN_TRUE);
+                (*pcmPlayerMute)->SetChannelMute(pcmPlayerMute,1, SL_BOOLEAN_FALSE);
+            break;
+
+        default:
+            (*pcmPlayerMute)->SetChannelMute(pcmPlayerMute,0, SL_BOOLEAN_FALSE);
+            (*pcmPlayerMute)->SetChannelMute(pcmPlayerMute,1, SL_BOOLEAN_FALSE);
+    }
+
+}
+
+int Audio::getSoundTouchData() {
+
+    while(playStatus && !playStatus->exit)
+    {
+
+    }
+
+
+    return 0;
 }

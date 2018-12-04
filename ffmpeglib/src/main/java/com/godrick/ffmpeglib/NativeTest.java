@@ -92,7 +92,10 @@ public class NativeTest {
     }
 
     public void start() {
-        new Thread(this::native_start).start();
+        new Thread(()->{
+//            native_stop();
+            native_start();
+        }).start();
     }
 
     public void pause(){
@@ -144,6 +147,10 @@ public class NativeTest {
         }
     }
 
+    public void setChannel(int channel){
+        native_setChannel(channel);
+    }
+
 
     private native void native_prepared(String source);
 
@@ -160,6 +167,8 @@ public class NativeTest {
     private native int native_getDuration();
 
     private native void native_setVolume(int percent);
+
+    private native void native_setChannel(int channel);
 
     public void onNativeCallPrepared() {
         if (onSourcePreparedListener != null) {

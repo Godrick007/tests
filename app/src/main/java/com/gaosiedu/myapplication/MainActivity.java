@@ -152,4 +152,16 @@ public class MainActivity extends AppCompatActivity {
         test.playNext("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
 
     }
+
+    public void left(View view) {
+        test.setChannel(1);
+    }
+
+    public void right(View view) {
+        test.setChannel(2);
+    }
+
+    public void center(View view) {
+        test.setChannel(0);
+    }
 }

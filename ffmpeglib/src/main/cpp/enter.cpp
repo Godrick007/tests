@@ -179,3 +179,15 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1setVolume(JNIEnv *env, jobject ins
     }
 
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1setChannel(JNIEnv *env, jobject instance,
+                                                         jint channel) {
+
+    if(ffmpeg)
+    {
+        ffmpeg->setChannel(channel);
+    }
+
+}

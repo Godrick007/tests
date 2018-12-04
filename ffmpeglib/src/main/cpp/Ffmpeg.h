@@ -60,6 +60,8 @@ public:
 
     void setVolume(int percent);
 
+    void setChannel(int channel);
+
 };
 
 

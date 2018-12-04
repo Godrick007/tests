@@ -24,6 +24,7 @@ SET(CMAKE_BUILD_TYPE "Debug")
 SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 include_directories(../ffmpeglib/src/main/cpp/include)
+include_directories(../ffmpeglib/src/main/cpp/include/libsoundtouch)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -43,6 +44,28 @@ add_library( # Sets the name of the library.
         ../ffmpeglib/src/main/cpp/Ffmpeg.cpp
         ../ffmpeglib/src/main/cpp/Audio.cpp
         ../ffmpeglib/src/main/cpp/CallJava.cpp)
+
+add_library(
+
+        soundtouch
+
+        SHARED
+
+        ../ffmpeglib/src/main/cpp/soundtouch/AAFilter.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/FIFOSampleBuffer.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/FIRFilter.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/cpu_detect_x86.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/sse_optimized.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/WavFile.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/RateTransposer.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/SoundTouch.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/InterpolateCubic.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/InterpolateLinear.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/InterpolateShannon.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/TDStretch.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/BPMDetect.cpp
+        ../ffmpeglib/src/main/cpp/soundtouch/PeakFinder.cpp
+)
 
 
 # Searches for a specified prebuilt library and stores the path as a
@@ -123,6 +146,7 @@ set_target_properties(x264
 target_link_libraries( # Specifies the target library.
 
 
+
         native-lib
         OpenSLES
         x264
@@ -134,6 +158,9 @@ target_link_libraries( # Specifies the target library.
         postproc-54
         swresample-2
         swscale-4
+
+        android
+        soundtouch
 
         # Links the target library to the log library
         # included in the NDK.

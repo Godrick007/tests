@@ -12,6 +12,10 @@
 #include <SLES/OpenSLES_Android.h>
 #include "CallJava.h"
 
+#include "SoundTouch.h"
+
+using namespace soundtouch;
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libswresample/swresample.h>
@@ -63,7 +67,12 @@ public:
 
     SLVolumeItf pcmPlayerVolume = NULL;
 
+    SLMuteSoloItf pcmPlayerMute = NULL;
+
     CallJava *callJava;
+
+    SoundTouch *soundTouch = NULL;
+    SAMPLETYPE *sampleBuffer = NULL;
 
 public:
 
@@ -88,6 +97,10 @@ public:
     void release();
 
     void setVolume(int percent);
+
+    void switchChannel(int channel);
+
+    int getSoundTouchData();
 
 };
 

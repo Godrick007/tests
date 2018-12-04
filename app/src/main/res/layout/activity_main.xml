@@ -16,52 +16,87 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
     <Button
         android:onClick="begin"
         android:textAllCaps="false"
         android:text="play"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="wrap_content" />
 
     <Button
         android:onClick="pause"
         android:textAllCaps="false"
         android:text="pause"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="wrap_content" />
 
     <Button
         android:onClick="resume"
         android:textAllCaps="false"
         android:text="resume"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="wrap_content" />
 
     <Button
         android:onClick="stop"
         android:textAllCaps="false"
         android:text="stop"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="wrap_content" />
 
-    <Button
-        android:onClick="seek"
-        android:textAllCaps="false"
-        android:text="seek"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+
 
     <Button
         android:onClick="next"
         android:textAllCaps="false"
         android:text="next"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="wrap_content" />
+
+    </LinearLayout>
 
     <SeekBar
         android:layout_marginTop="10dp"
         android:id="@+id/seekbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:text="left"
+            android:onClick="left"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:text="right"
+            android:onClick="right"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:text="center"
+            android:onClick="center"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
 
 </LinearLayout>

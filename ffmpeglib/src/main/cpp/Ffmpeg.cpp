@@ -331,3 +331,12 @@ void Ffmpeg::setVolume(int percent) {
 
 }
 
+void Ffmpeg::setChannel(int channel) {
+
+    if(audio)
+    {
+        audio->switchChannel(channel);
+    }
+
+}
+

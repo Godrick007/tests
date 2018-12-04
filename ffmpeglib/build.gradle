@@ -15,7 +15,7 @@ android {
 
         externalNativeBuild{
             cmake{
-                cppFlags "-frtti -fexceptions -g -debug"
+                cppFlags "-frtti -fexceptions -g -debug -Wunused-const-variable -Wmacro-redefined -Wunused-variable"
                 abiFilters 'armeabi','x86'
             }
         }
