@@ -74,6 +74,20 @@ public:
     SoundTouch *soundTouch = NULL;
     SAMPLETYPE *sampleBuffer = NULL;
 
+    bool finish = true;
+
+    uint8_t *outBuffer = NULL;
+
+    int nb = 0;
+
+    int num = 0;
+
+
+    float speed = 1.0f;
+    float pitch = 1.0f;
+    int channel = 0;
+
+
 public:
 
     Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava);
@@ -82,7 +96,7 @@ public:
 
     void play();
 
-    int resampleAudio();
+    int resampleAudio(void **pcmBuffer);
 
     void initSLES();
 
@@ -101,6 +115,12 @@ public:
     void switchChannel(int channel);
 
     int getSoundTouchData();
+
+    void setPitch(float pitch);
+
+    void setSpeed(float tempo);
+
+    int getPCMDB(char *pcmcate,size_t pcmSize);
 
 };
 

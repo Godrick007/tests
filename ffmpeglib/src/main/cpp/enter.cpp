@@ -191,3 +191,27 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1setChannel(JNIEnv *env, jobject in
     }
 
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1setSpeed(JNIEnv *env, jobject instance,
+                                                       jfloat speed) {
+
+    if(ffmpeg)
+    {
+        ffmpeg->setSpeed(speed);
+    }
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1setPitch(JNIEnv *env, jobject instance,
+                                                       jfloat pitch) {
+
+    if(ffmpeg)
+    {
+        ffmpeg->setPitch(pitch);
+    }
+
+}

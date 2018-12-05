@@ -312,6 +312,8 @@ void Ffmpeg::seek(int64_t second) {
 
         int64_t rel = second * AV_TIME_BASE;
 
+        avcodec_flush_buffers(audio->pCodecContext);
+
         avformat_seek_file(pFormatContext,-1,INT64_MIN,rel,INT64_MAX,0);
 
 
@@ -338,5 +340,20 @@ void Ffmpeg::setChannel(int channel) {
         audio->switchChannel(channel);
     }
 
+}
+
+void Ffmpeg::setSpeed(float speed) {
+    if(audio)
+    {
+        audio->setSpeed(speed);
+    }
+}
+
+void Ffmpeg::setPitch(float pitch) {
+
+    if(audio)
+    {
+        audio->setPitch(pitch);
+    }
 }
 

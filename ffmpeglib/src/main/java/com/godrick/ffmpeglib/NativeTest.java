@@ -10,6 +10,7 @@ import com.godrick.ffmpeglib.listeners.OnLoadListener;
 import com.godrick.ffmpeglib.listeners.OnPauseResumeListener;
 import com.godrick.ffmpeglib.listeners.OnProgressListener;
 import com.godrick.ffmpeglib.listeners.OnSourcePreparedListener;
+import com.godrick.ffmpeglib.listeners.OnValueDbListener;
 
 
 public class NativeTest {
@@ -45,6 +46,8 @@ public class NativeTest {
 
     private OnCompleteListener onCompleteListener;
 
+    private OnValueDbListener onValueDbListener;
+
     private static boolean playNext = false;
 
     public NativeTest(Context context) {
@@ -78,6 +81,10 @@ public class NativeTest {
 
     public void setOnCompleteListener(OnCompleteListener onCompleteListener) {
         this.onCompleteListener = onCompleteListener;
+    }
+
+    public void setOnValueDbListener(OnValueDbListener onValueDbListener) {
+        this.onValueDbListener = onValueDbListener;
     }
 
     public void prepared() {
@@ -151,6 +158,14 @@ public class NativeTest {
         native_setChannel(channel);
     }
 
+    public void setSpeed(float speed){
+        native_setSpeed(speed);
+    }
+
+    public void setPitch(float pitch){
+        native_setPitch(pitch);
+    }
+
 
     private native void native_prepared(String source);
 
@@ -169,6 +184,10 @@ public class NativeTest {
     private native void native_setVolume(int percent);
 
     private native void native_setChannel(int channel);
+
+    private native void native_setSpeed(float speed);
+
+    private native void native_setPitch(float pitch);
 
     public void onNativeCallPrepared() {
         if (onSourcePreparedListener != null) {
@@ -211,6 +230,12 @@ public class NativeTest {
             prepared();
         }
 
+    }
+
+    public void onNaticeCallVolumeDB(int db){
+        if(onValueDbListener != null){
+            onValueDbListener.onValueDbCallback(db);
+        }
     }
 
 }

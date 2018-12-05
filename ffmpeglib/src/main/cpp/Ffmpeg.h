@@ -62,6 +62,10 @@ public:
 
     void setChannel(int channel);
 
+    void setSpeed(float speed);
+
+    void setPitch(float pitch);
+
 };
 
 

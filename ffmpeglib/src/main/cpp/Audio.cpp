@@ -18,6 +18,8 @@ Audio::Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava) {
 
     soundTouch->setSampleRate(sample_rate);
     soundTouch->setChannels(2);
+    soundTouch->setPitch(pitch);
+    soundTouch->setTempo(speed);
 
 }
 
@@ -44,7 +46,7 @@ void Audio::play() {
 }
 
 
-int Audio::resampleAudio() {
+int Audio::resampleAudio(void **pcmBuffer) {
 
     while (playStatus != NULL && !playStatus->exit)
     {
@@ -52,7 +54,7 @@ int Audio::resampleAudio() {
         //判断当前队列状态,如果是0 就说明没有数据可以播放
         if(queue->getQueueSize() == 0)
         {
-            if(!playStatus->load)
+            if(playStatus->load)
             {
                 playStatus->load = true;
                 callJava->callJavaOnLoad(true);
@@ -152,7 +154,7 @@ int Audio::resampleAudio() {
             }
 
             //获取到转换之后的buffer
-            int nb = swr_convert(
+            nb = swr_convert(
                     swr_ctx,
                     &buffer, //转码后的输出pcm数据大小
                     avFrame->nb_samples, //输出采样个数
@@ -175,6 +177,8 @@ int Audio::resampleAudio() {
             if(now_time < clock)
                 now_time = clock;
             clock = now_time;
+
+            *pcmBuffer = buffer;
 
             av_packet_free(&avPacket);
             av_free(avPacket);
@@ -209,7 +213,7 @@ void pcmBufferCallback(SLAndroidSimpleBufferQueueItf queue,void *context)
 
     if(instance != NULL)
     {
-        int bufferSize = instance->resampleAudio();
+        int bufferSize = instance->getSoundTouchData();
         if(bufferSize > 0)
         {
             instance->clock += bufferSize / ((double) instance->sample_rate * 2 * 2);
@@ -220,9 +224,10 @@ void pcmBufferCallback(SLAndroidSimpleBufferQueueItf queue,void *context)
                 instance->callJava->callJavaOnProgress(instance->clock,instance->duration);
             }
 
+            instance->callJava->callJavaOnValueDb(instance->getPCMDB(
+                    reinterpret_cast<char *>(instance->sampleBuffer), bufferSize * 4));
 
-
-            (*instance->pcmBufferQueue)->Enqueue(instance->pcmBufferQueue,instance->buffer,bufferSize);
+            (*instance->pcmBufferQueue)->Enqueue(instance->pcmBufferQueue,instance->sampleBuffer,bufferSize * 2 * 2);
         }
     }
 
@@ -582,9 +587,89 @@ int Audio::getSoundTouchData() {
 
     while(playStatus && !playStatus->exit)
     {
+        outBuffer = NULL;
+        if(finish)
+        {
+            finish = false;
+            data_size = resampleAudio(reinterpret_cast<void **>(&outBuffer));
+
+            if(data_size > 0)
+            {
+                for(int i = 0; i <data_size /2 +1;i++)
+                {
+                    sampleBuffer[i] = (outBuffer[i*2] | ((outBuffer[i *2 +1]) <<8));
+                }
+                soundTouch->putSamples(sampleBuffer,nb);
+                num = soundTouch->receiveSamples(sampleBuffer,data_size / 4);
+            }
+            else
+            {
+                soundTouch->flush();
+            }
+
+        }
+
+        if(num == 0)
+        {
+            finish = true;
+            continue;
+        }
+        else
+        {
+            if(outBuffer == NULL)
+            {
+                num = soundTouch->receiveSamples(sampleBuffer,data_size /4);
+                if(num == 0)
+                {
+                    finish = true;
+                    continue;
+                }
+            }
+            return num;
+        }
 
     }
 
 
     return 0;
+}
+
+void Audio::setPitch(float pitch) {
+    this->pitch = pitch;
+    if(soundTouch)
+    {
+        soundTouch->setPitch(pitch);
+    }
+}
+
+void Audio::setSpeed(float speed) {
+    this->speed = speed;
+    if(soundTouch)
+    {
+        soundTouch->setTempo(speed);
+    }
+}
+
+int Audio::getPCMDB(char *pcmcate, size_t pcmSize) {
+
+    int db = 0;
+
+    short int pervalue = 0;
+
+    double  sum = 0;
+
+    for(int i = 0; i < pcmSize; i +=2)
+    {
+        memcpy(&pervalue,pcmcate +i,2);
+        sum += abs(pervalue);
+    }
+
+    sum /= (pcmSize / 2);
+
+    if(sum > 0)
+    {
+        db = 20 * log10(sum);
+    }
+
+    return db;
 }

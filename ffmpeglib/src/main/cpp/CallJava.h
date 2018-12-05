@@ -21,6 +21,7 @@ public:
     jmethodID mid_onProgress;
     jmethodID mid_onError;
     jmethodID mid_onComplete;
+    jmethodID mid_onVolumeDB;
 
 public:
     CallJava(JavaVM *jvm, JNIEnv *jniEnv,jobject *obj);
@@ -36,6 +37,8 @@ public:
     void callJavaOnError(int code,char* msg);
     void callJavaOnCompleteUIThread();
     void callJavaOnComplete();
+    void callJavaOnValueDbUIThread(int db);
+    void callJavaOnValueDb(int db);
 };
 
 

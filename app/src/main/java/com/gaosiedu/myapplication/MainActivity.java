@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.godrick.ffmpeglib.NativeTest;
 import com.godrick.ffmpeglib.listeners.OnCompleteListener;
+import com.godrick.ffmpeglib.listeners.OnValueDbListener;
 import com.godrick.ffmpeglib.util.TimeUtil;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -108,6 +109,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
+            }
+        });
+
+        test.setOnValueDbListener(new OnValueDbListener() {
+            @Override
+            public void onValueDbCallback(int db) {
+                Log.e("java","db is " + db);
             }
         });
 
