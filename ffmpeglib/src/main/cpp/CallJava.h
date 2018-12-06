@@ -22,6 +22,7 @@ public:
     jmethodID mid_onError;
     jmethodID mid_onComplete;
     jmethodID mid_onVolumeDB;
+    jmethodID mid_pcm2AAC;
 
 public:
     CallJava(JavaVM *jvm, JNIEnv *jniEnv,jobject *obj);
@@ -39,6 +40,8 @@ public:
     void callJavaOnComplete();
     void callJavaOnValueDbUIThread(int db);
     void callJavaOnValueDb(int db);
+    void callJavaPCM2AACUIThread(int size, const void *buffer);
+    void callJavaPCM2AAC(int size, const void *buffer);
 };
 
 

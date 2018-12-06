@@ -357,3 +357,19 @@ void Ffmpeg::setPitch(float pitch) {
     }
 }
 
+int Ffmpeg::getSampleRate() {
+
+    if(audio)
+    {
+        return audio->pCodecContext->sample_rate;
+    }
+    return 0;
+}
+
+void Ffmpeg::startStopRecord(bool state) {
+    if(audio)
+    {
+        audio->startStopRecord(state);
+    }
+}
+

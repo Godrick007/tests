@@ -25,7 +25,8 @@ CallJava::CallJava(JavaVM *jvm, JNIEnv *jniEnv, jobject *obj) {
     mid_onProgress = jniEnv->GetMethodID(clz,"onNativeCallProgress","(II)V");
     mid_onError = jniEnv->GetMethodID(clz,"onNativeCallError","(ILjava/lang/String;)V");
     mid_onComplete = jniEnv->GetMethodID(clz,"onNativeCallComplete","()V");
-    mid_onVolumeDB = jniEnv->GetMethodID(clz,"onNaticeCallVolumeDB","(I)V");
+    mid_onVolumeDB = jniEnv->GetMethodID(clz,"onNativeCallVolumeDB","(I)V");
+    mid_pcm2AAC = jniEnv->GetMethodID(clz,"onNativeCallEncodePCM2AAC","(I[B)V");
 }
 
 CallJava::~CallJava() {
@@ -58,6 +59,15 @@ void CallJava::callJavaOnCompleteUIThread() {
 
 void CallJava::callJavaOnValueDbUIThread(int db) {
     this->jniEnv->CallVoidMethod(jobj, mid_onVolumeDB,db);
+}
+
+void CallJava::callJavaPCM2AACUIThread(int size, const void *buffer) {
+
+    jbyteArray bytes = this->jniEnv->NewByteArray(size);
+    this->jniEnv->SetByteArrayRegion(bytes, 0, size, (jbyte *)buffer);
+    this->jniEnv->CallVoidMethod(this->jobj, mid_pcm2AAC,size,bytes);
+    this->jniEnv->DeleteLocalRef(bytes);
+
 }
 
 void CallJava::callJavaOnProgress(int current, int total) {
@@ -157,5 +167,28 @@ void CallJava::callJavaOnValueDb(int db) {
     jvm->DetachCurrentThread();
 
 }
+
+void CallJava::callJavaPCM2AAC(int size, const void *buffer) {
+
+    JNIEnv *env;
+    if(jvm->AttachCurrentThread(&env, 0 )!= JNI_OK){
+        if(LOG_DEBUG){
+            LOGD("Ffmpeg","get thread jniEnv error");
+        }
+        return;
+    }
+
+    jbyteArray bytes = env->NewByteArray(size);
+    env->SetByteArrayRegion(bytes, 0, size, (jbyte *)buffer);
+
+    env->CallVoidMethod(this->jobj, mid_pcm2AAC,size,bytes);
+
+    env->DeleteLocalRef(bytes);
+
+    jvm->DetachCurrentThread();
+
+}
+
+
 
 

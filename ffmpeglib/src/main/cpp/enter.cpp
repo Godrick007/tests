@@ -215,3 +215,27 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1setPitch(JNIEnv *env, jobject inst
     }
 
 }
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1getSampleRate(JNIEnv *env, jobject instance) {
+
+    if(ffmpeg)
+    {
+        return ffmpeg->getSampleRate();
+    }
+
+    return 0;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1startStopRecord(JNIEnv *env, jobject instance,
+                                                              jboolean state) {
+
+    if(ffmpeg)
+    {
+        ffmpeg->startStopRecord(state);
+    }
+
+}

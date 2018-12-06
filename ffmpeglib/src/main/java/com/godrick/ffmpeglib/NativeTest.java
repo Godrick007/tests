@@ -1,6 +1,9 @@
 package com.godrick.ffmpeglib;
 
 import android.content.Context;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaFormat;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -11,6 +14,11 @@ import com.godrick.ffmpeglib.listeners.OnPauseResumeListener;
 import com.godrick.ffmpeglib.listeners.OnProgressListener;
 import com.godrick.ffmpeglib.listeners.OnSourcePreparedListener;
 import com.godrick.ffmpeglib.listeners.OnValueDbListener;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
 public class NativeTest {
@@ -49,6 +57,8 @@ public class NativeTest {
     private OnValueDbListener onValueDbListener;
 
     private static boolean playNext = false;
+
+    private boolean isRecording = false;
 
     public NativeTest(Context context) {
         this.context = context;
@@ -117,7 +127,10 @@ public class NativeTest {
 
     public void stop(){
 
-        new Thread(this::native_stop).start();
+        new Thread(()-> {
+            stopRecord();
+            native_stop();
+        }).start();
     }
 
 
@@ -166,6 +179,31 @@ public class NativeTest {
         native_setPitch(pitch);
     }
 
+    public void startRecord(File file){
+
+        if(native_getSampleRate() <= 0 || isRecording) return;
+        initMediaCodec(native_getSampleRate(),file);
+        isRecording = true;
+        native_startStopRecord(true);
+
+    }
+
+    public void stopRecord(){
+        isRecording = false;
+        native_startStopRecord(false);
+        releaseMediaCodec();
+    }
+
+    public void pauseRecord(){
+        isRecording = false;
+        native_startStopRecord(false);
+    }
+
+    public void resumeRecord(){
+        isRecording = true;
+        native_startStopRecord(true);
+    }
+
 
     private native void native_prepared(String source);
 
@@ -188,6 +226,10 @@ public class NativeTest {
     private native void native_setSpeed(float speed);
 
     private native void native_setPitch(float pitch);
+
+    private native int native_getSampleRate();
+
+    private native void native_startStopRecord(boolean state);
 
     public void onNativeCallPrepared() {
         if (onSourcePreparedListener != null) {
@@ -232,10 +274,204 @@ public class NativeTest {
 
     }
 
-    public void onNaticeCallVolumeDB(int db){
+    public void onNativeCallVolumeDB(int db){
         if(onValueDbListener != null){
             onValueDbListener.onValueDbCallback(db);
         }
+    }
+
+
+
+    //media codec encode
+
+    private MediaFormat encoderFormat;
+    private MediaCodec encoder;
+    private FileOutputStream fos;
+    private MediaCodec.BufferInfo bufferInfo;
+    private int pcmSize = 0;
+    private byte[] outputBuffer;
+    private int ACCSampleRate;
+    private float recordSecond;
+    private int audioSampleRate = 0;
+
+    private void initMediaCodec(int sampleRate, File outputFile){
+
+
+        try {
+
+            ACCSampleRate = getACCSampleRate(sampleRate);
+            recordSecond = 0;
+            audioSampleRate = native_getSampleRate();
+            encoderFormat = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC,sampleRate,2);
+            encoderFormat.setInteger(MediaFormat.KEY_BIT_RATE,96000);
+            encoderFormat.setInteger(MediaFormat.KEY_AAC_PROFILE,MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+            encoderFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,4096 * 2);
+
+            encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC);
+            encoder.configure(encoderFormat,null,null,MediaCodec.CONFIGURE_FLAG_ENCODE);
+
+            bufferInfo = new MediaCodec.BufferInfo();
+
+
+            if(encoder == null){
+                Log.e("java","encoder create error");
+                return;
+            }
+
+            fos = new FileOutputStream(outputFile);
+            encoder.start();
+            isRecording = true;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
+
+    private void onNativeCallEncodePCM2AAC(int size , byte[] buffer){
+
+        if(buffer != null && encoder != null && isRecording)
+        {
+            int inputBufferIndex = encoder.dequeueInputBuffer(0);
+            if(inputBufferIndex >= 0)
+            {
+
+
+                recordSecond += size * 1.0f / (audioSampleRate * 2 * (16 / 8));
+
+                Log.e("codec","record second is " + recordSecond);
+
+                ByteBuffer byteBuffer = encoder.getInputBuffers()[inputBufferIndex];
+                byteBuffer.clear();
+
+//                Log.e("codec",String.format("remaining is %d , length is %d",byteBuffer.remaining(),buffer.length));
+
+                byteBuffer.put(buffer);
+                encoder.queueInputBuffer(inputBufferIndex, 0, size, 0, 0);
+            }
+
+            int index = encoder.dequeueOutputBuffer(bufferInfo, 0);
+            while(index >= 0)
+            {
+                try {
+                    pcmSize = bufferInfo.size + 7;
+                    outputBuffer = new byte[pcmSize];
+
+                    ByteBuffer byteBuffer = encoder.getOutputBuffers()[index];
+                    byteBuffer.position(bufferInfo.offset);
+                    byteBuffer.limit(bufferInfo.offset + bufferInfo.size);
+
+                    addDtsHeader(outputBuffer, pcmSize, ACCSampleRate);
+
+                    byteBuffer.get(outputBuffer, 7, bufferInfo.size);
+                    byteBuffer.position(bufferInfo.offset);
+                    fos.write(outputBuffer, 0, pcmSize);
+                    encoder.releaseOutputBuffer(index, false);
+                    index = encoder.dequeueOutputBuffer(bufferInfo, 0);
+                    outputBuffer = null;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (NullPointerException e){
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+
+
+    private void releaseMediaCodec(){
+
+        if(fos != null){
+            try {
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        fos = null;
+        if(encoder != null) {
+            encoder.stop();
+            encoder.release();
+            encoder = null;
+        }
+
+        if(encoderFormat != null){
+            encoderFormat = null;
+        }
+        if(bufferInfo != null) {
+            bufferInfo = null;
+        }
+
+    }
+
+    private void addDtsHeader(byte[] packet,int packetLength,int sampleRate){
+
+        int profile = 2; // AAC LC
+        int freqIdx = sampleRate; // samplerate
+        int chanCfg = 2; // CPE
+
+        packet[0] = (byte) 0xFF; // 0xFFF(12bit) 这里只取了8位，所以还差4位放到下一个里面
+        packet[1] = (byte) 0xF9; // 第一个t位放F
+        packet[2] = (byte) (((profile - 1) << 6) + (freqIdx << 2) + (chanCfg >> 2));
+        packet[3] = (byte) (((chanCfg & 3) << 6) + (packetLength >> 11));
+        packet[4] = (byte) ((packetLength & 0x7FF) >> 3);
+        packet[5] = (byte) (((packetLength & 7) << 5) + 0x1F);
+        packet[6] = (byte) 0xFC;
+
+    }
+
+
+    private int getACCSampleRate(int sampleRate){
+
+        int rate = 4;
+        switch (sampleRate)
+        {
+            case 96000:
+                rate = 0;
+                break;
+            case 88200:
+                rate = 1;
+                break;
+            case 64000:
+                rate = 2;
+                break;
+            case 48000:
+                rate = 3;
+                break;
+            case 44100:
+                rate = 4;
+                break;
+            case 32000:
+                rate = 5;
+                break;
+            case 24000:
+                rate = 6;
+                break;
+            case 22050:
+                rate = 7;
+                break;
+            case 16000:
+                rate = 8;
+                break;
+            case 12000:
+                rate = 9;
+                break;
+            case 11025:
+                rate = 10;
+                break;
+            case 8000:
+                rate = 11;
+                break;
+            case 7350:
+                rate = 12;
+                break;
+        }
+        return rate;
     }
 
 }

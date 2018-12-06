@@ -16,6 +16,8 @@ import com.godrick.ffmpeglib.listeners.OnCompleteListener;
 import com.godrick.ffmpeglib.listeners.OnValueDbListener;
 import com.godrick.ffmpeglib.util.TimeUtil;
 
+import java.io.File;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
@@ -34,13 +36,9 @@ public class MainActivity extends AppCompatActivity {
             super.handleMessage(msg);
 
             if(msg.what == 1){
-
                 int current = msg.arg1;
                 int total = msg.arg2;
-
                 textView.setText(TimeUtil.secdsToDateFormat(current,total) +"/"+ TimeUtil.secdsToDateFormat(total,total));
-
-
             }
 
         }
@@ -115,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         test.setOnValueDbListener(new OnValueDbListener() {
             @Override
             public void onValueDbCallback(int db) {
-                Log.e("java","db is " + db);
+//                Log.e("java","db is " + db);
             }
         });
 
@@ -145,7 +143,8 @@ public class MainActivity extends AppCompatActivity {
         test.resume();
     }
 
-    public void stop(View view) { test.stop();
+    public void stop(View view) {
+        test.stop();
     }
 
 
@@ -171,5 +170,21 @@ public class MainActivity extends AppCompatActivity {
 
     public void center(View view) {
         test.setChannel(0);
+    }
+
+    public void startRecord(View view) {
+        test.startRecord(new File(Environment.getExternalStorageDirectory(),"1.acc"));
+    }
+
+    public void stopRecord(View view) {
+        test.stopRecord();
+    }
+
+    public void pauseRecord(View view) {
+        test.pauseRecord();
+    }
+
+    public void resumeRecord(View view) {
+        test.resumeRecord();
     }
 }

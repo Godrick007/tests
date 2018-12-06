@@ -87,6 +87,7 @@ public:
     float pitch = 1.0f;
     int channel = 0;
 
+    bool  isRecord = false;
 
 public:
 
@@ -121,6 +122,8 @@ public:
     void setSpeed(float tempo);
 
     int getPCMDB(char *pcmcate,size_t pcmSize);
+
+    void startStopRecord(bool state);
 
 };
 

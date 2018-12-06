@@ -214,14 +214,17 @@ void pcmBufferCallback(SLAndroidSimpleBufferQueueItf queue,void *context)
     if(instance != NULL)
     {
         int bufferSize = instance->getSoundTouchData();
-        if(bufferSize > 0)
-        {
+        if(bufferSize > 0) {
             instance->clock += bufferSize / ((double) instance->sample_rate * 2 * 2);
 
-            if(instance->clock - instance->last_time >= 0.1)
-            {
+            if (instance->clock - instance->last_time >= 0.1) {
                 instance->last_time = instance->clock;
-                instance->callJava->callJavaOnProgress(instance->clock,instance->duration);
+                instance->callJava->callJavaOnProgress(instance->clock, instance->duration);
+            }
+
+            if (instance->isRecord)
+            {
+                instance->callJava->callJavaPCM2AAC(bufferSize * 2 * 2, instance->sampleBuffer);
             }
 
             instance->callJava->callJavaOnValueDb(instance->getPCMDB(
@@ -314,11 +317,11 @@ void Audio::initSLES() {
     SLDataSink audioSink = {&outputMix,NULL};
 
     //player
-    const SLInterfaceID id[3] = {SL_IID_BUFFERQUEUE,SL_IID_VOLUME,SL_IID_MUTESOLO};
-    const SLboolean bools[3] = {SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE};
+    const SLInterfaceID id[4] = {SL_IID_BUFFERQUEUE,SL_IID_VOLUME,SL_IID_MUTESOLO, SL_IID_PLAYBACKRATE};
+    const SLboolean bools[4] = {SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE};
 
 
-    result = (*engineEngine)->CreateAudioPlayer(engineEngine,&pcmPlayerObject,&slDataSource,&audioSink,3,id,bools);
+    result = (*engineEngine)->CreateAudioPlayer(engineEngine,&pcmPlayerObject,&slDataSource,&audioSink,4,id,bools);
     LOGE("ffmpeg","CreateAudioPlayer is %d",result);
 
     assert(result == SL_RESULT_SUCCESS);
@@ -672,4 +675,10 @@ int Audio::getPCMDB(char *pcmcate, size_t pcmSize) {
     }
 
     return db;
+}
+
+void Audio::startStopRecord(bool state) {
+
+    this->isRecord = state;
+
 }

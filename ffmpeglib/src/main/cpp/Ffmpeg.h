@@ -66,6 +66,10 @@ public:
 
     void setPitch(float pitch);
 
+    int getSampleRate();
+
+    void startStopRecord(bool state);
+
 };
 
 
