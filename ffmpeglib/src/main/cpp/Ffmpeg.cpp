@@ -67,8 +67,10 @@ void Ffmpeg::decodeFfmpegThread() {
 
 
     for (int i = 0; i < pFormatContext->nb_streams; i++) {
-        if (pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (audio == NULL) {
+        if (pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+        {
+            if (audio == NULL)
+            {
                 audio = new Audio(playStatus,pFormatContext->streams[i]->codecpar->sample_rate,callJava);
                 this->audio->streamIndex = i;
                 this->audio->pCodecParameters = pFormatContext->streams[i]->codecpar;
@@ -77,51 +79,46 @@ void Ffmpeg::decodeFfmpegThread() {
                 this->duration = audio->duration;
             }
         }
-    }
+        else if(pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+        {
+            if(video == NULL)
+            {
+                video = new Video(playStatus,callJava);
+                this->video->streamIndex = i;
+                this->video->pCodecParameters = pFormatContext->streams[i]->codecpar;
+                this->video->timeBase = pFormatContext->streams[i]->time_base;
+            }
 
-    AVCodec *pCodec = avcodec_find_decoder(audio->pCodecParameters->codec_id);
-
-    if (!pCodec) {
-        if (LOG_DEBUG) {
-            LOGE("ffmpeg", "can not find decoder");
         }
-        callJava->callJavaOnError(102,"can not find decoder");
-        exit = true;
-        pthread_mutex_unlock(&mutexInit);
-        return;
     }
 
-    audio->pCodecContext = avcodec_alloc_context3(pCodec);
+    int ret;
 
-    if (!audio->pCodecContext) {
-        if (LOG_DEBUG) {
-            LOGE("ffmpeg", "can not alloc decoder context");
+    if(audio)
+    {
+        ret = getCodecContext(audio->pCodecParameters, &audio->pCodecContext);
+
+        if(ret != 0)
+        {
+//            return;
         }
-        callJava->callJavaOnError(103,"can not alloc decoder context");
-        exit = true;
-        pthread_mutex_unlock(&mutexInit);
-        return;
     }
 
-    if (avcodec_parameters_to_context(audio->pCodecContext, audio->pCodecParameters) < 0) {
-        if (LOG_DEBUG) {
-            LOGE("ffmpeg", "can not fill decoder context");
+
+    if(video)
+    {
+        ret = getCodecContext(video->pCodecParameters, &video->pCodecContext);
+
+        if(ret != 0)
+        {
+//            return;
         }
-        callJava->callJavaOnError(104,"can not fill decoder context");
-        exit = true;
-        pthread_mutex_unlock(&mutexInit);
-        return;
     }
 
-    if (avcodec_open2(audio->pCodecContext, pCodec, 0) != 0) {
-        if (LOG_DEBUG) {
-            LOGE("ffmpeg", "can not open audio stream");
-        }
-        callJava->callJavaOnError(105,"can not open audio stream");
-        exit = true;
-        pthread_mutex_unlock(&mutexInit);
-        return;
-    }
+
+
+
+
 
     callJava->callJavaOnPreparedThread();
     pthread_mutex_unlock(&mutexInit);
@@ -144,13 +141,18 @@ void Ffmpeg::start() {
 
     while (playStatus != NULL && !playStatus->exit) {
 
+
+
+
         if(playStatus->seek)
         {
+            av_usleep(1000 * 100);
             continue;
         }
 
-        if(audio->queue->getQueueSize() > 40)
+        if(audio->queue->getQueueSize() > 100)
         {
+            av_usleep(1000 * 100);
             continue;
         }
 
@@ -163,18 +165,29 @@ void Ffmpeg::start() {
 
         pthread_mutex_unlock(&mutexSeek);
 
-        if ( ret == 0) {
+        if ( ret == 0)
+        {
 
-            if (pPacket->stream_index == audio->streamIndex) {
+            if (pPacket->stream_index == audio->streamIndex)
+            {
                 //解码操作
                 audio->queue->putAvPacket(pPacket);
-            }else{
+            }
+            else if(pPacket->stream_index == video->streamIndex)
+            {
+                video->pQueue->putAvPacket(pPacket);
+                LOGE("ffmepg","av packet video");
+            }
+            else
+            {
                 av_packet_free(&pPacket);
                 av_free(pPacket);
             }
 
 
-        } else {
+        }
+        else
+        {
 
             av_packet_free(&pPacket);
             av_free(pPacket);
@@ -185,6 +198,7 @@ void Ffmpeg::start() {
             {
                 if(audio->queue->getQueueSize() > 0)
                 {
+                    av_usleep(1000 * 100);
                     continue;
                 } else{
                     playStatus->exit = true;
@@ -371,5 +385,58 @@ void Ffmpeg::startStopRecord(bool state) {
     {
         audio->startStopRecord(state);
     }
+}
+
+int Ffmpeg::getCodecContext(AVCodecParameters *codecParameters, AVCodecContext **codecContext) {
+
+    AVCodec *pCodec = avcodec_find_decoder(codecParameters->codec_id);
+
+    if (!pCodec) {
+        if (LOG_DEBUG) {
+            LOGE("ffmpeg", "can not find decoder");
+        }
+        callJava->callJavaOnError(102,"can not find decoder");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
+        return -1;
+    }
+
+    *codecContext = avcodec_alloc_context3(pCodec);
+
+    if (*codecContext)
+    {
+        if (LOG_DEBUG)
+        {
+            LOGE("ffmpeg", "can not alloc decoder context");
+        }
+        callJava->callJavaOnError(103,"can not alloc decoder context");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
+        return -1;
+    }
+
+    if (avcodec_parameters_to_context(*codecContext, codecParameters) < 0) {
+        if (LOG_DEBUG) {
+            LOGE("ffmpeg", "can not fill decoder context");
+        }
+        callJava->callJavaOnError(104,"can not fill decoder context");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
+        return -1;
+    }
+
+    if (avcodec_open2(*codecContext, pCodec, 0) != 0) {
+        if (LOG_DEBUG) {
+            LOGE("ffmpeg", "can not open audio stream");
+        }
+        callJava->callJavaOnError(105,"can not open audio stream");
+        exit = true;
+        pthread_mutex_unlock(&mutexInit);
+        return -1;
+    }
+
+
+
+    return 0;
 }
 

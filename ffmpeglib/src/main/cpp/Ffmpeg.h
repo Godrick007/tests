@@ -9,6 +9,7 @@
 #include "CallJava.h"
 #include "Audio.h"
 #include "PlayStatus.h"
+#include "Video.h"
 
 extern "C" {
 #include <libavutil/time.h>
@@ -33,6 +34,9 @@ public:
     int duration;
 
     pthread_mutex_t mutexSeek;
+
+    Video *video = NULL;
+
 
 public:
     Ffmpeg(PlayStatus *playStatus,CallJava *cj, const char *url);
@@ -69,6 +73,9 @@ public:
     int getSampleRate();
 
     void startStopRecord(bool state);
+
+
+    int getCodecContext(AVCodecParameters *codecParameters,AVCodecContext **codecContext);
 
 };
 

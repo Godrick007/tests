@@ -124,7 +124,8 @@ public class MainActivity extends AppCompatActivity {
 
         if(PackageManager.PERMISSION_GRANTED == checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)){
 //            test.setSource("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
-            test.setSource(Environment.getExternalStorageDirectory().getAbsolutePath() + "/1.mp3");
+//            test.setSource(Environment.getExternalStorageDirectory().getAbsolutePath() + "/1.mp3");
+            test.setSource(Environment.getExternalStorageDirectory().getAbsolutePath() + "/test.mp4");
 //            test.setSource("");
             test.prepared();
         }else{

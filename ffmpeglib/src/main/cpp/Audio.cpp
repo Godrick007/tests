@@ -4,6 +4,7 @@
 
 
 #include <cassert>
+
 #include "Audio.h"
 
 Audio::Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava) {
@@ -51,6 +52,14 @@ int Audio::resampleAudio(void **pcmBuffer) {
     while (playStatus != NULL && !playStatus->exit)
     {
 
+
+        if(playStatus->seek)
+        {
+            av_usleep(1000 * 100);
+            continue;
+        }
+
+
         //判断当前队列状态,如果是0 就说明没有数据可以播放
         if(queue->getQueueSize() == 0)
         {
@@ -59,6 +68,7 @@ int Audio::resampleAudio(void **pcmBuffer) {
                 playStatus->load = true;
                 callJava->callJavaOnLoad(true);
             }
+            av_usleep(1000 * 100);
             continue;
         }
         else
@@ -469,6 +479,8 @@ void Audio::release() {
         pcmPlayerObject = NULL;
         pcmPlayerPlay = NULL;
         pcmBufferQueue = NULL;
+        pcmPlayerMute = NULL;
+        pcmPlayerVolume = NULL;
     }
 
 
@@ -492,6 +504,23 @@ void Audio::release() {
         buffer = NULL;
     }
 
+    if(outBuffer)
+    {
+        outBuffer = NULL;
+    }
+
+    if(soundTouch)
+    {
+        delete soundTouch;
+        soundTouch = NULL;
+    }
+
+    if(sampleBuffer)
+    {
+        free(sampleBuffer);
+        sampleBuffer = NULL;
+    }
+
     if(pCodecContext)
     {
         avcodec_close(pCodecContext);
@@ -509,6 +538,8 @@ void Audio::release() {
     {
         callJava = NULL;
     }
+
+
 
 
 }
