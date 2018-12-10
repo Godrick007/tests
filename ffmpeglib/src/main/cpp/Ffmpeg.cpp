@@ -43,19 +43,18 @@ void Ffmpeg::decodeFfmpegThread() {
         if (LOG_DEBUG) {
             LOGE("ffmpeg", "open url error  -- %s", this->url);
         }
-        callJava->callJavaOnError(100,"can not open url");
+        callJava->callJavaOnError(100, "can not open url");
         exit = true;
         pthread_mutex_unlock(&mutexInit);
         return;
     }
 
 
-
     if (avformat_find_stream_info(pFormatContext, NULL) < 0) {
         if (LOG_DEBUG) {
             LOGE("ffmpeg", "can not find stream");
         }
-        callJava->callJavaOnError(101,"can find stream");
+        callJava->callJavaOnError(101, "can find stream");
         exit = true;
         pthread_mutex_unlock(&mutexInit);
         return;
@@ -67,23 +66,19 @@ void Ffmpeg::decodeFfmpegThread() {
 
 
     for (int i = 0; i < pFormatContext->nb_streams; i++) {
-        if (pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-        {
-            if (audio == NULL)
-            {
-                audio = new Audio(playStatus,pFormatContext->streams[i]->codecpar->sample_rate,callJava);
+        if (pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (audio == NULL) {
+                audio = new Audio(playStatus, pFormatContext->streams[i]->codecpar->sample_rate,
+                                  callJava);
                 this->audio->streamIndex = i;
                 this->audio->pCodecParameters = pFormatContext->streams[i]->codecpar;
                 this->audio->duration = pFormatContext->duration / AV_TIME_BASE;
                 this->audio->time_base = pFormatContext->streams[i]->time_base;
                 this->duration = audio->duration;
             }
-        }
-        else if(pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-        {
-            if(video == NULL)
-            {
-                video = new Video(playStatus,callJava);
+        } else if (pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            if (video == NULL) {
+                video = new Video(playStatus, callJava);
                 this->video->streamIndex = i;
                 this->video->pCodecParameters = pFormatContext->streams[i]->codecpar;
                 this->video->timeBase = pFormatContext->streams[i]->time_base;
@@ -94,33 +89,35 @@ void Ffmpeg::decodeFfmpegThread() {
 
     int ret;
 
-    if(audio)
-    {
+    if (audio) {
         ret = getCodecContext(audio->pCodecParameters, &audio->pCodecContext);
 
-        if(ret != 0)
-        {
-//            return;
+        if (ret != 0) {
+            return;
         }
     }
 
 
-    if(video)
-    {
+    if (video) {
         ret = getCodecContext(video->pCodecParameters, &video->pCodecContext);
 
-        if(ret != 0)
-        {
-//            return;
+        if (ret != 0) {
+            return;
         }
     }
 
 
+    if (playStatus && !playStatus->exit)
+    {
+        callJava->callJavaOnPreparedThread();
+    }
+    else
+    {
+        exit = true;
+    }
 
 
 
-
-    callJava->callJavaOnPreparedThread();
     pthread_mutex_unlock(&mutexInit);
 }
 
@@ -176,7 +173,7 @@ void Ffmpeg::start() {
             else if(pPacket->stream_index == video->streamIndex)
             {
                 video->pQueue->putAvPacket(pPacket);
-                LOGE("ffmepg","av packet video");
+//                LOGE("ffmepg","av packet video");
             }
             else
             {
@@ -272,6 +269,13 @@ void Ffmpeg::release() {
         audio->release();
         delete audio;
         audio = NULL;
+    }
+
+    if(video)
+    {
+        video->release();
+        delete video;
+        video = NULL;
     }
 
     if(pFormatContext)
@@ -403,7 +407,7 @@ int Ffmpeg::getCodecContext(AVCodecParameters *codecParameters, AVCodecContext *
 
     *codecContext = avcodec_alloc_context3(pCodec);
 
-    if (*codecContext)
+    if (!*codecContext)
     {
         if (LOG_DEBUG)
         {

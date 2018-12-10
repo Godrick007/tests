@@ -35,7 +35,7 @@ public:
     void callJavaOnProgressUIThread(int current,int total);
     void callJavaOnProgress(int current,int total);
     void callJavaOnErrorUIThread(int code,char* msg);
-    void callJavaOnError(int code,char* msg);
+    void callJavaOnError(int code,const char* msg);
     void callJavaOnCompleteUIThread();
     void callJavaOnComplete();
     void callJavaOnValueDbUIThread(int db);

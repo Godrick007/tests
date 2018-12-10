@@ -11,6 +11,7 @@
 
 extern "C"{
 #include <libavcodec/avcodec.h>
+#include <libavutil/time.h>
 };
 
 class Video {
@@ -23,11 +24,15 @@ public:
     PlayStatus *playStatus = NULL;
     CallJava *callJava = NULL;
     AVRational timeBase;
-
+    pthread_t thread_play;
 
 public:
     Video(PlayStatus *playStatus,CallJava *callJava);
     ~Video();
+
+    void play();
+
+    void release();
 
 };
 

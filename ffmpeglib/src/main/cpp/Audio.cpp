@@ -63,7 +63,7 @@ int Audio::resampleAudio(void **pcmBuffer) {
         //判断当前队列状态,如果是0 就说明没有数据可以播放
         if(queue->getQueueSize() == 0)
         {
-            if(playStatus->load)
+            if(!playStatus->load)
             {
                 playStatus->load = true;
                 callJava->callJavaOnLoad(true);

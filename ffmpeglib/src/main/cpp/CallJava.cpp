@@ -116,7 +116,7 @@ void CallJava::callJavaOnPreparedThread() {
 
 
 
-void CallJava::callJavaOnError(int code, char *msg) {
+void CallJava::callJavaOnError(int code, const char *msg) {
     JNIEnv *env;
 
     if(jvm->AttachCurrentThread(&env, 0 )!= JNI_OK){
@@ -126,10 +126,16 @@ void CallJava::callJavaOnError(int code, char *msg) {
         return;
     }
 
-    jstring jmsg = jniEnv->NewStringUTF(msg);
-    env->CallVoidMethod(this->jobj, mid_onError,code,jmsg);
-    env->DeleteLocalRef(jmsg);
+//    LOGE("callJavaOnError",msg,"");
 
+//    printf(msg,"");
+
+
+    jstring jmsg = jniEnv->NewStringUTF(msg);
+
+    env->CallVoidMethod(this->jobj, mid_onError,code,jmsg);
+
+    env->DeleteLocalRef(jmsg);
 
     jvm->DetachCurrentThread();
 }
