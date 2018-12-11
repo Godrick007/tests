@@ -8,10 +8,13 @@
 #include "Queue.h"
 #include "CallJava.h"
 #include "PlayStatus.h"
+#include "Audio.h"
 
 extern "C"{
 #include <libavcodec/avcodec.h>
 #include <libavutil/time.h>
+#include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
 };
 
 class Video {
@@ -26,6 +29,17 @@ public:
     AVRational timeBase;
     pthread_t thread_play;
 
+    Audio *audio;
+
+    double clock;
+
+    double delayTime = 0;
+
+    double defaultDelayTime = 0.04;
+
+    pthread_mutex_t mutex_codec;
+
+
 public:
     Video(PlayStatus *playStatus,CallJava *callJava);
     ~Video();
@@ -33,6 +47,10 @@ public:
     void play();
 
     void release();
+
+    double getFrameDiffTime(AVFrame *avFrame);
+
+    double getDelayTime(double diff);
 
 };
 

@@ -14,6 +14,7 @@ import android.widget.TextView;
 import com.godrick.ffmpeglib.NativeTest;
 import com.godrick.ffmpeglib.listeners.OnCompleteListener;
 import com.godrick.ffmpeglib.listeners.OnValueDbListener;
+import com.godrick.ffmpeglib.opengl.CGLSurfaceView;
 import com.godrick.ffmpeglib.util.TimeUtil;
 
 import java.io.File;
@@ -26,9 +27,14 @@ public class MainActivity extends AppCompatActivity {
 
     TextView textView;
 
-    SeekBar seekBar;
+    SeekBar sbVolume;
+
+    SeekBar sbProgress;
+
 
     private int volume = 0;
+
+    private CGLSurfaceView cglSurfaceView;
 
      Handler handler = new Handler(){
         @Override
@@ -54,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         test.setOnSourcePreparedListener(() -> {
             Log.e("ffmpeg", "prepared is cool");
             test.start();
+            sbProgress.setMax(test.getDuration());
         });
 
         test.setOnLoadListener(load->{
@@ -77,6 +84,9 @@ public class MainActivity extends AppCompatActivity {
             message.arg1 = current;
             message.arg2 = total;
             handler.sendMessage(message);
+
+            sbProgress.setProgress(current);
+
 //            Log.e("java",String.format("current is %d, total is %d",current,total));
         });
 
@@ -89,11 +99,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        seekBar = findViewById(R.id.seekbar);
+        sbVolume = findViewById(R.id.seekbar);
 
-        seekBar.setMax(100);
+        sbVolume.setMax(100);
 
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        sbVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 test.setVolume(progress);
@@ -114,6 +124,30 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onValueDbCallback(int db) {
 //                Log.e("java","db is " + db);
+            }
+        });
+
+        cglSurfaceView = findViewById(R.id.gl_surface_view);
+
+        test.setGlSurfaceView(cglSurfaceView);
+
+        sbProgress = findViewById(R.id.sb_progress);
+
+        sbProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//                test.seek(progress);
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+//                test.seek(s);
             }
         });
 

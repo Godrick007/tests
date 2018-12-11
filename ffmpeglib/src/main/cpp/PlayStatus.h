@@ -16,6 +16,9 @@ public:
 
     bool seek = false;
 
+    bool pause = false;
+
+
 public:
 
     PlayStatus();

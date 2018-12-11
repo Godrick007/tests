@@ -7,7 +7,8 @@
 
 #include "Audio.h"
 
-Audio::Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava) {
+Audio::Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava)
+{
     this->playStatus = playStatus;
     this->sample_rate = sample_rate;
     this->callJava = callJava;
@@ -22,10 +23,13 @@ Audio::Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava) {
     soundTouch->setPitch(pitch);
     soundTouch->setTempo(speed);
 
+    pthread_mutex_init(&mutex_codec,NULL);
+
 }
 
 Audio::~Audio() {
     LOGE("release","Audio's release is called");
+    pthread_mutex_destroy(&mutex_codec);
     release();
 }
 
@@ -95,12 +99,16 @@ int Audio::resampleAudio(void **pcmBuffer) {
 
         //解码流程
         //解码对象 将数据发送到解码器
+
+        pthread_mutex_lock(&mutex_codec);
+
         ret = avcodec_send_packet(pCodecContext,avPacket);
         if(ret != 0)
         {
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
+            pthread_mutex_unlock(&mutex_codec);
             continue;
         }
 
@@ -115,6 +123,7 @@ int Audio::resampleAudio(void **pcmBuffer) {
             av_frame_free(&avFrame);
             av_free(avFrame);
             avFrame = NULL;
+            pthread_mutex_unlock(&mutex_codec);
             continue;
         }
         else
@@ -160,6 +169,7 @@ int Audio::resampleAudio(void **pcmBuffer) {
                 {
                     swr_free(&swr_ctx);
                 }
+                pthread_mutex_unlock(&mutex_codec);
                 continue;
             }
 
@@ -198,7 +208,7 @@ int Audio::resampleAudio(void **pcmBuffer) {
             avFrame = NULL;
             swr_free(&swr_ctx);
             swr_ctx = NULL;
-
+            pthread_mutex_unlock(&mutex_codec);
             break;
 
         }
@@ -523,10 +533,11 @@ void Audio::release() {
 
     if(pCodecContext)
     {
+        pthread_mutex_lock(&mutex_codec);
         avcodec_close(pCodecContext);
         avcodec_free_context(&pCodecContext);
         pCodecContext = NULL;
-
+        pthread_mutex_unlock(&mutex_codec);
     }
 
     if(playStatus)

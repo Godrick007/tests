@@ -90,6 +90,8 @@ public:
 
     bool  isRecord = false;
 
+    pthread_mutex_t mutex_codec;
+
 public:
 
     Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava);

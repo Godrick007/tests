@@ -23,6 +23,7 @@ public:
     jmethodID mid_onComplete;
     jmethodID mid_onVolumeDB;
     jmethodID mid_pcm2AAC;
+    jmethodID mid_yuv;
 
 public:
     CallJava(JavaVM *jvm, JNIEnv *jniEnv,jobject *obj);
@@ -42,6 +43,8 @@ public:
     void callJavaOnValueDb(int db);
     void callJavaPCM2AACUIThread(int size, const void *buffer);
     void callJavaPCM2AAC(int size, const void *buffer);
+    void callJavaYUVDataUIThread(int width,int height,uint8_t *fy,uint8_t *fu,uint8_t *fv);
+    void callJavaYUVData(int width,int height,uint8_t *fy,uint8_t *fu,uint8_t *fv);
 };
 
 

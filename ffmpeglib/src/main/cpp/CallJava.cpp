@@ -27,6 +27,7 @@ CallJava::CallJava(JavaVM *jvm, JNIEnv *jniEnv, jobject *obj) {
     mid_onComplete = jniEnv->GetMethodID(clz,"onNativeCallComplete","()V");
     mid_onVolumeDB = jniEnv->GetMethodID(clz,"onNativeCallVolumeDB","(I)V");
     mid_pcm2AAC = jniEnv->GetMethodID(clz,"onNativeCallEncodePCM2AAC","(I[B)V");
+    mid_yuv = jniEnv->GetMethodID(clz,"onNativeCallRenderYUV","(II[B[B[B)V");
 }
 
 CallJava::~CallJava() {
@@ -190,6 +191,39 @@ void CallJava::callJavaPCM2AAC(int size, const void *buffer) {
     env->CallVoidMethod(this->jobj, mid_pcm2AAC,size,bytes);
 
     env->DeleteLocalRef(bytes);
+
+    jvm->DetachCurrentThread();
+
+}
+
+void CallJava::callJavaYUVDataUIThread(int width,int height,uint8_t *fy,uint8_t *fu,uint8_t *fv) {
+
+}
+
+void CallJava::callJavaYUVData(int width,int height,uint8_t *fy,uint8_t *fu,uint8_t *fv) {
+
+    JNIEnv *env;
+    if(jvm->AttachCurrentThread(&env, 0 )!= JNI_OK){
+        if(LOG_DEBUG){
+            LOGD("Ffmpeg","get thread jniEnv error");
+        }
+        return;
+    }
+
+    jbyteArray y = env->NewByteArray(width * height);
+    jbyteArray u = env->NewByteArray(width * height / 4);
+    jbyteArray v = env->NewByteArray(width * height / 4);
+
+    env->SetByteArrayRegion(y, 0, width * height, reinterpret_cast<const jbyte *>(fy));
+    env->SetByteArrayRegion(u, 0, width * height / 4, reinterpret_cast<const jbyte *>(fu));
+    env->SetByteArrayRegion(v, 0, width * height / 4 , reinterpret_cast<const jbyte *>(fv));
+
+
+    env->CallVoidMethod(this->jobj, mid_yuv,width,height,y,u,v);
+
+    env->DeleteLocalRef(y);
+    env->DeleteLocalRef(u);
+    env->DeleteLocalRef(v);
 
     jvm->DetachCurrentThread();
 

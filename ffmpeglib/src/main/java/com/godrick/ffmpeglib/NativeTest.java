@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.opengl.GLSurfaceView;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -12,8 +13,10 @@ import com.godrick.ffmpeglib.listeners.OnErrorListener;
 import com.godrick.ffmpeglib.listeners.OnLoadListener;
 import com.godrick.ffmpeglib.listeners.OnPauseResumeListener;
 import com.godrick.ffmpeglib.listeners.OnProgressListener;
+import com.godrick.ffmpeglib.listeners.OnRenderCallback;
 import com.godrick.ffmpeglib.listeners.OnSourcePreparedListener;
 import com.godrick.ffmpeglib.listeners.OnValueDbListener;
+import com.godrick.ffmpeglib.opengl.CGLSurfaceView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -56,6 +59,10 @@ public class NativeTest {
 
     private OnValueDbListener onValueDbListener;
 
+    private OnRenderCallback onRenderCallback;
+
+    private CGLSurfaceView glSurfaceView;
+
     private static boolean playNext = false;
 
     private boolean isRecording = false;
@@ -95,6 +102,14 @@ public class NativeTest {
 
     public void setOnValueDbListener(OnValueDbListener onValueDbListener) {
         this.onValueDbListener = onValueDbListener;
+    }
+
+    public void setOnRenderCallback(OnRenderCallback onRenderCallback) {
+        this.onRenderCallback = onRenderCallback;
+    }
+
+    public void setGlSurfaceView(CGLSurfaceView glSurfaceView){
+        this.glSurfaceView = glSurfaceView;
     }
 
     public void prepared() {
@@ -377,6 +392,21 @@ public class NativeTest {
                     e.printStackTrace();
                 }
             }
+        }
+
+    }
+
+
+    public void onNativeCallRenderYUV(int width,int height,byte[] y, byte[] u, byte[] v){
+
+//        Log.e("java","call back data");
+
+//        if(onRenderCallback != null){
+//            onRenderCallback.onCallback(width,height,y,u,v);
+//        }
+
+        if(glSurfaceView != null){
+            glSurfaceView.setYuvData(width,height,y,u,v);
         }
 
     }
