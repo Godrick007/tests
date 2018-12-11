@@ -196,7 +196,7 @@ public class CRender implements GLSurfaceView.Renderer {
                     0,
                     GLES20.GL_LUMINANCE,
                     GLES20.GL_UNSIGNED_BYTE,
-                    y
+                    u
             );
 
             GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
@@ -210,7 +210,7 @@ public class CRender implements GLSurfaceView.Renderer {
                     0,
                     GLES20.GL_LUMINANCE,
                     GLES20.GL_UNSIGNED_BYTE,
-                    y
+                    v
             );
 
             GLES20.glUniform1i(sampler_y,0);
