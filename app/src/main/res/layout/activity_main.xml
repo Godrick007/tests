@@ -65,6 +65,7 @@
         android:layout_height="wrap_content" />
 
         <Button
+            android:visibility="gone"
             android:onClick="seek"
             android:textAllCaps="false"
             android:text="seek"

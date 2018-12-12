@@ -155,6 +155,26 @@ void Ffmpeg::start() {
 
     video->audio = audio;
 
+
+    video->codecType = callJava->callJavaCheckSupportVideo(video->pCodecContext->codec->name)? CODEC_MEDIA_CODEC : CODEC_YUV;
+
+    if(!video->codecType)
+    {
+        if(LOG_DEBUG)
+        {
+            LOGE("ffmpeg","device support hard codec");
+        }
+    }
+    else
+    {
+        if(LOG_DEBUG)
+        {
+            LOGE("ffmpeg","device support hard codec");
+        }
+    }
+
+
+
     audio->play();
     video->play();
 
@@ -171,7 +191,7 @@ void Ffmpeg::start() {
         }
 
 
-        if(audio->queue->getQueueSize() > 100)
+        if(audio->queue->getQueueSize() > 40)
         {
             av_usleep(1000 * 100);
             continue;
@@ -222,7 +242,12 @@ void Ffmpeg::start() {
                     av_usleep(1000 * 100);
                     continue;
                 } else{
-                    playStatus->exit = true;
+                    if(!playStatus->seek)
+                    {
+                        av_usleep(1000 * 500);
+                        playStatus->exit = true;
+                    }
+
                     break;
                 }
             }
@@ -350,13 +375,17 @@ void Ffmpeg::seek(int64_t second) {
         return;
     }
 
-    pthread_mutex_lock(&mutexSeek);
+
+    LOGE("ffmpeg_seek","seek now");
     playStatus->seek = true;
+    pthread_mutex_lock(&mutexSeek);
     int64_t rel = second * AV_TIME_BASE;
     avformat_seek_file(pFormatContext,-1,INT64_MIN,rel,INT64_MAX,0);
 
     if(audio != NULL)
     {
+        LOGE("audio_seek","seek now");
+
         audio->queue->clearAVPacket();
         audio->clock = 0;
         audio->last_time = 0;
@@ -367,6 +396,8 @@ void Ffmpeg::seek(int64_t second) {
 
     if(video != NULL)
     {
+        LOGE("video_seek","seek now");
+
         video->pQueue->clearAVPacket();
         video->clock = 0;
         pthread_mutex_lock(&video->mutex_codec);
@@ -376,7 +407,7 @@ void Ffmpeg::seek(int64_t second) {
 
     pthread_mutex_unlock(&mutexSeek);
     playStatus->seek = false;
-
+    LOGE("ffmpeg_seek","seek over");
 }
 
 void Ffmpeg::setVolume(int percent) {

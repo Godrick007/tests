@@ -72,156 +72,168 @@ void *playVideo(void *data)
         }
 
 
-        pthread_mutex_lock(&video->mutex_codec);
-        if(avcodec_send_packet(video->pCodecContext,pPacket) != 0)
+        if(video->codecType == CODEC_MEDIA_CODEC)
         {
-            av_usleep(1000 * 100);
             av_packet_free(&pPacket);
             av_free(pPacket);
             pPacket = NULL;
-            pthread_mutex_unlock(&video->mutex_codec);
-            continue;
+
+
         }
-
-        AVFrame *pFrame = av_frame_alloc();
-
-        if(avcodec_receive_frame(video->pCodecContext,pFrame) != 0)
+        else if(video->codecType == CODEC_YUV)
         {
-            av_frame_free(&pFrame);
-            av_free(pFrame);
-            pFrame = NULL;
-            av_usleep(1000 * 100);
-            av_packet_free(&pPacket);
-            av_free(pPacket);
-            pPacket = NULL;
-            pthread_mutex_unlock(&video->mutex_codec);
-            continue;
-        }
-
-
-        //success get a packet
-
-        if(pFrame->format == AV_PIX_FMT_YUV420P)
-        {
-
-
-            double diff = video->getFrameDiffTime(pFrame);
-
-            if(LOG_DEBUG)
+            pthread_mutex_lock(&video->mutex_codec);
+            if(avcodec_send_packet(video->pCodecContext,pPacket) != 0)
             {
-                LOGE("video","diff time is %f",diff);
-            }
-
-            av_usleep(video->getDelayTime(diff) * AV_TIME_BASE);
-
-
-
-            // render
-            video->callJava->callJavaYUVData(
-                    video->pCodecContext->width,
-                    video->pCodecContext->height,
-                    pFrame->data[0],
-                    pFrame->data[1],
-                    pFrame->data[2]
-                    );
-        }
-        else
-        {
-            //use scale turn to yuv420p
-
-            AVFrame *pFrameYUV420P = av_frame_alloc();
-
-            int num = av_image_get_buffer_size(
-                    AV_PIX_FMT_YUV420P,
-                    video->pCodecContext->width,
-                    video->pCodecContext->height,
-                    1
-            );
-
-            uint8_t *buffer = static_cast<uint8_t *>(av_malloc(num * sizeof(uint8_t)));
-
-            av_image_fill_arrays(
-                    pFrameYUV420P->data,
-                    pFrameYUV420P->linesize,
-                    buffer,
-                    AV_PIX_FMT_YUV420P,
-                    video->pCodecContext->width,
-                    video->pCodecContext->height,
-                    1);
-
-            SwsContext *sws_ctx = sws_getContext(
-                    video->pCodecContext->width,
-                    video->pCodecContext->height,
-                    video->pCodecContext->pix_fmt,
-                    video->pCodecContext->width,
-                    video->pCodecContext->height,
-                    AV_PIX_FMT_YUV420P,
-                    SWS_BICUBIC,NULL,NULL,NULL
-                    );
-
-            if(!sws_ctx)
-            {
-
-                av_frame_free(&pFrameYUV420P);
-                av_free(pFrameYUV420P);
-                av_free(buffer);
+                av_packet_free(&pPacket);
+                av_free(pPacket);
+                pPacket = NULL;
                 pthread_mutex_unlock(&video->mutex_codec);
                 continue;
             }
 
-            sws_scale(
-                    sws_ctx,
-                    pFrame->data,
-                    pFrame->linesize,
-                    0,
-                    pFrame->height,
-                    pFrameYUV420P->data,
-                    pFrameYUV420P->linesize
-                    );
+            AVFrame *pFrame = av_frame_alloc();
 
-            //turn over and callback to application layer
-
-            if(LOG_DEBUG)
+            if(avcodec_receive_frame(video->pCodecContext,pFrame) != 0)
             {
-//                LOGE("video","this is NOT a yuv data");
+                av_frame_free(&pFrame);
+                av_free(pFrame);
+                pFrame = NULL;
+                av_packet_free(&pPacket);
+                av_free(pPacket);
+                pPacket = NULL;
+                pthread_mutex_unlock(&video->mutex_codec);
+                continue;
             }
 
-            double diff = video->getFrameDiffTime(pFrame);
 
-            if(LOG_DEBUG)
+            //success get a packet
+
+            if(pFrame->format == AV_PIX_FMT_YUV420P)
             {
+
+
+                double diff = video->getFrameDiffTime(pFrame);
+
+                if(LOG_DEBUG)
+                {
 //                LOGE("video","diff time is %f",diff);
+                }
+
+                av_usleep(video->getDelayTime(diff) * AV_TIME_BASE);
+
+
+
+                // render
+                video->callJava->callJavaYUVData(
+                        video->pCodecContext->width,
+                        video->pCodecContext->height,
+                        pFrame->data[0],
+                        pFrame->data[1],
+                        pFrame->data[2]
+                );
+            }
+            else
+            {
+                //use scale turn to yuv420p
+
+                AVFrame *pFrameYUV420P = av_frame_alloc();
+
+                int num = av_image_get_buffer_size(
+                        AV_PIX_FMT_YUV420P,
+                        video->pCodecContext->width,
+                        video->pCodecContext->height,
+                        1
+                );
+
+                uint8_t *buffer = static_cast<uint8_t *>(av_malloc(num * sizeof(uint8_t)));
+
+                av_image_fill_arrays(
+                        pFrameYUV420P->data,
+                        pFrameYUV420P->linesize,
+                        buffer,
+                        AV_PIX_FMT_YUV420P,
+                        video->pCodecContext->width,
+                        video->pCodecContext->height,
+                        1);
+
+                SwsContext *sws_ctx = sws_getContext(
+                        video->pCodecContext->width,
+                        video->pCodecContext->height,
+                        video->pCodecContext->pix_fmt,
+                        video->pCodecContext->width,
+                        video->pCodecContext->height,
+                        AV_PIX_FMT_YUV420P,
+                        SWS_BICUBIC,NULL,NULL,NULL
+                );
+
+                if(!sws_ctx)
+                {
+
+                    av_frame_free(&pFrameYUV420P);
+                    av_free(pFrameYUV420P);
+                    av_free(buffer);
+                    pthread_mutex_unlock(&video->mutex_codec);
+                    continue;
+                }
+
+                sws_scale(
+                        sws_ctx,
+                        pFrame->data,
+                        pFrame->linesize,
+                        0,
+                        pFrame->height,
+                        pFrameYUV420P->data,
+                        pFrameYUV420P->linesize
+                );
+
+                //turn over and callback to application layer
+
+                if(LOG_DEBUG)
+                {
+//                LOGE("video","this is NOT a yuv data");
+                }
+
+                double diff = video->getFrameDiffTime(pFrame);
+
+                if(LOG_DEBUG)
+                {
+//                LOGE("video","diff time is %f",diff);
+                }
+
+                av_usleep(video->getDelayTime(diff) * AV_TIME_BASE);
+
+                video->callJava->callJavaYUVData(
+                        video->pCodecContext->width,
+                        video->pCodecContext->height,
+                        pFrameYUV420P->data[0],
+                        pFrameYUV420P->data[1],
+                        pFrameYUV420P->data[2]
+                );
+
+
+
+                av_frame_free(&pFrameYUV420P);
+                av_free(pFrameYUV420P);
+                av_free(buffer);
+                sws_freeContext(sws_ctx);
+
+
             }
 
-            av_usleep(video->getDelayTime(diff) * AV_TIME_BASE);
-
-            video->callJava->callJavaYUVData(
-                    video->pCodecContext->width,
-                    video->pCodecContext->height,
-                    pFrameYUV420P->data[0],
-                    pFrameYUV420P->data[1],
-                    pFrameYUV420P->data[2]
-            );
 
 
-
-            av_frame_free(&pFrameYUV420P);
-            av_free(pFrameYUV420P);
-            av_free(buffer);
-            sws_freeContext(sws_ctx);
-
-
+            av_frame_free(&pFrame);
+            av_free(pFrame);
+            pFrame = NULL;
+            av_packet_free(&pPacket);
+            av_free(pPacket);
+            pPacket = NULL;
+            pthread_mutex_unlock(&video->mutex_codec);
         }
 
 
 
-        av_frame_free(&pFrame);
-        av_free(pFrame);
-        pFrame = NULL;
-        av_packet_free(&pPacket);
-        av_free(pPacket);
-        pPacket = NULL;
-        pthread_mutex_unlock(&video->mutex_codec);
     }
 
     pthread_exit(&video->thread_play);

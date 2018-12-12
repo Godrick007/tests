@@ -28,6 +28,7 @@ CallJava::CallJava(JavaVM *jvm, JNIEnv *jniEnv, jobject *obj) {
     mid_onVolumeDB = jniEnv->GetMethodID(clz,"onNativeCallVolumeDB","(I)V");
     mid_pcm2AAC = jniEnv->GetMethodID(clz,"onNativeCallEncodePCM2AAC","(I[B)V");
     mid_yuv = jniEnv->GetMethodID(clz,"onNativeCallRenderYUV","(II[B[B[B)V");
+    mid_support_video = jniEnv->GetMethodID(clz,"onNativeCallSupportMediaCodec","(Ljava/lang/String;)Z");
 }
 
 CallJava::~CallJava() {
@@ -70,6 +71,13 @@ void CallJava::callJavaPCM2AACUIThread(int size, const void *buffer) {
     this->jniEnv->DeleteLocalRef(bytes);
 
 }
+
+
+bool CallJava::callJavaCheckSupportVideoUIThread(const char *codeName) {
+    return false;
+}
+
+
 
 void CallJava::callJavaOnProgress(int current, int total) {
 
@@ -228,6 +236,27 @@ void CallJava::callJavaYUVData(int width,int height,uint8_t *fy,uint8_t *fu,uint
     jvm->DetachCurrentThread();
 
 }
+
+bool CallJava::callJavaCheckSupportVideo(const char *codeName) {
+
+    JNIEnv *env;
+    if(jvm->AttachCurrentThread(&env, 0 )!= JNI_OK){
+        if(LOG_DEBUG){
+            LOGD("Ffmpeg","get thread jniEnv error");
+        }
+        return false;
+    }
+
+    jstring name = env->NewStringUTF(codeName);
+
+    bool supported = env->CallBooleanMethod(this->jobj,mid_support_video,name);
+
+    env->DeleteLocalRef(name);
+    jvm->DetachCurrentThread();
+
+    return supported;
+}
+
 
 
 

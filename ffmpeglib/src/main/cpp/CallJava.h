@@ -24,6 +24,7 @@ public:
     jmethodID mid_onVolumeDB;
     jmethodID mid_pcm2AAC;
     jmethodID mid_yuv;
+    jmethodID mid_support_video;
 
 public:
     CallJava(JavaVM *jvm, JNIEnv *jniEnv,jobject *obj);
@@ -45,6 +46,9 @@ public:
     void callJavaPCM2AAC(int size, const void *buffer);
     void callJavaYUVDataUIThread(int width,int height,uint8_t *fy,uint8_t *fu,uint8_t *fv);
     void callJavaYUVData(int width,int height,uint8_t *fy,uint8_t *fu,uint8_t *fv);
+
+    bool callJavaCheckSupportVideoUIThread(const char *codeName);
+    bool callJavaCheckSupportVideo(const char *codeName);
 };
 
 

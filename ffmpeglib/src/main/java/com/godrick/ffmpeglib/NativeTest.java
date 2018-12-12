@@ -17,6 +17,7 @@ import com.godrick.ffmpeglib.listeners.OnRenderCallback;
 import com.godrick.ffmpeglib.listeners.OnSourcePreparedListener;
 import com.godrick.ffmpeglib.listeners.OnValueDbListener;
 import com.godrick.ffmpeglib.opengl.CGLSurfaceView;
+import com.godrick.ffmpeglib.util.VideoUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -411,6 +412,10 @@ public class NativeTest {
 
     }
 
+
+    public boolean onNativeCallSupportMediaCodec(String codecName){
+        return VideoUtil.isSupportCodec(codecName);
+    }
 
     private void releaseMediaCodec(){
 

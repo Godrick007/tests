@@ -31,6 +31,9 @@ public class MainActivity extends AppCompatActivity {
 
     SeekBar sbProgress;
 
+    private int progress;
+
+    private boolean seekProgress = false;
 
     private int volume = 0;
 
@@ -79,14 +82,21 @@ public class MainActivity extends AppCompatActivity {
 
         test.setOnProgressListener((current,total)->{
 
-            Message message = handler.obtainMessage();
-            message.what = 1;
-            message.arg1 = current;
-            message.arg2 = total;
-            handler.sendMessage(message);
 
-            sbProgress.setProgress(current);
 
+
+
+
+            if(!seekProgress) {
+
+                Message message = handler.obtainMessage();
+                message.what = 1;
+                message.arg1 = current;
+                message.arg2 = total;
+                handler.sendMessage(message);
+
+                sbProgress.setProgress(current);
+            }
 //            Log.e("java",String.format("current is %d, total is %d",current,total));
         });
 
@@ -137,17 +147,18 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 //                test.seek(progress);
-
+                  MainActivity.this.progress = progress;
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
+                seekProgress = true;
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-//                test.seek(s);
+                test.seek(MainActivity.this.progress);
+                seekProgress = false;
             }
         });
 

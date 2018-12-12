@@ -17,6 +17,10 @@ extern "C"{
 #include <libswscale/swscale.h>
 };
 
+#define CODEC_YUV 0
+#define CODEC_MEDIA_CODEC 1
+
+
 class Video {
 
 public:
@@ -38,6 +42,8 @@ public:
     double defaultDelayTime = 0.04;
 
     pthread_mutex_t mutex_codec;
+
+    int codecType = CODEC_YUV;
 
 
 public:
