@@ -29,6 +29,8 @@ CallJava::CallJava(JavaVM *jvm, JNIEnv *jniEnv, jobject *obj) {
     mid_pcm2AAC = jniEnv->GetMethodID(clz,"onNativeCallEncodePCM2AAC","(I[B)V");
     mid_yuv = jniEnv->GetMethodID(clz,"onNativeCallRenderYUV","(II[B[B[B)V");
     mid_support_video = jniEnv->GetMethodID(clz,"onNativeCallSupportMediaCodec","(Ljava/lang/String;)Z");
+    mid_initVideoCodec = jniEnv->GetMethodID(clz,"initMediaCodec","(Ljava/lang/String;II[B[B)V");
+    mid_decodeVideo = jniEnv->GetMethodID(clz,"decodeVideo","([BI)V");
 }
 
 CallJava::~CallJava() {
@@ -255,6 +257,57 @@ bool CallJava::callJavaCheckSupportVideo(const char *codeName) {
     jvm->DetachCurrentThread();
 
     return supported;
+}
+
+void
+CallJava::callJavaInitMediaCodecUIThread(const char *codecName, int width, int height, uint8_t *csd_0,
+                                         uint8_t *csd_1) {
+
+}
+
+void CallJava::callJavaInitMediaCodec(const char *codecName, int width, int height, uint8_t *csd_0, int csd_0_len,uint8_t *csd_1, int csd_1_len) {
+    JNIEnv *env;
+    if(jvm->AttachCurrentThread(&env, 0 )!= JNI_OK){
+        if(LOG_DEBUG){
+            LOGD("Ffmpeg","get thread jniEnv error");
+        }
+        return;
+    }
+
+    jstring name = env->NewStringUTF(codecName);
+    jbyteArray bCsd_0 = env->NewByteArray(csd_0_len);
+    jbyteArray bCsd_1 = env->NewByteArray(csd_1_len);
+
+    env->SetByteArrayRegion(bCsd_0, 0, csd_0_len, reinterpret_cast<const jbyte *>(csd_0));
+    env->SetByteArrayRegion(bCsd_1, 0, csd_1_len, reinterpret_cast<const jbyte *>(csd_1));
+
+    env->CallVoidMethod(this->jobj,mid_initVideoCodec,name,width,height,bCsd_0,bCsd_1);
+
+
+    env->DeleteLocalRef(bCsd_1);
+    env->DeleteLocalRef(bCsd_0);
+    env->DeleteLocalRef(name);
+
+    jvm->DetachCurrentThread();
+}
+
+void CallJava::callJavaDecodeVideo(uint8_t *data, int size) {
+    JNIEnv *env;
+    if(jvm->AttachCurrentThread(&env, 0 )!= JNI_OK){
+        if(LOG_DEBUG){
+            LOGD("Ffmpeg","get thread jniEnv error");
+        }
+        return;
+    }
+
+    jbyteArray jdata = env->NewByteArray(size);
+    env->SetByteArrayRegion(jdata, 0, size, reinterpret_cast<const jbyte *>(data));
+
+    env->CallVoidMethod(this->jobj,mid_decodeVideo,jdata,size);
+
+    env->DeleteLocalRef(jdata);
+
+    jvm->DetachCurrentThread();
 }
 
 

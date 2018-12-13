@@ -7,6 +7,7 @@ import android.media.MediaFormat;
 import android.opengl.GLSurfaceView;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Surface;
 
 import com.godrick.ffmpeglib.listeners.OnCompleteListener;
 import com.godrick.ffmpeglib.listeners.OnErrorListener;
@@ -17,6 +18,7 @@ import com.godrick.ffmpeglib.listeners.OnRenderCallback;
 import com.godrick.ffmpeglib.listeners.OnSourcePreparedListener;
 import com.godrick.ffmpeglib.listeners.OnValueDbListener;
 import com.godrick.ffmpeglib.opengl.CGLSurfaceView;
+import com.godrick.ffmpeglib.opengl.CRender;
 import com.godrick.ffmpeglib.util.VideoUtil;
 
 import java.io.File;
@@ -33,6 +35,7 @@ public class NativeTest {
     static {
         System.loadLibrary("native-lib");
         System.loadLibrary("x264");
+        System.loadLibrary("soundtouch");
         System.loadLibrary("avdevice-57");
         System.loadLibrary("avfilter-6");
         System.loadLibrary("avformat-57");
@@ -111,6 +114,9 @@ public class NativeTest {
 
     public void setGlSurfaceView(CGLSurfaceView glSurfaceView){
         this.glSurfaceView = glSurfaceView;
+        glSurfaceView.getRender().setOnSurfaceCreatedListener(surface -> {
+            this.surface = surface;
+        });
     }
 
     public void prepared() {
@@ -145,6 +151,8 @@ public class NativeTest {
 
         new Thread(()-> {
             stopRecord();
+            releaseCodec();
+            releaseMediaCodec();
             native_stop();
         }).start();
     }
@@ -507,6 +515,115 @@ public class NativeTest {
                 break;
         }
         return rate;
+    }
+
+
+    private MediaFormat mediaFormat;
+    private MediaCodec mediaCodec;
+
+    private Surface surface;
+
+    private MediaCodec.BufferInfo outputBufferInfo;
+
+    public void initMediaCodec(String codecName,int width,int height,byte[] csd_0,byte[] csd_1){
+
+
+        if(surface != null){
+            try {
+
+                glSurfaceView.getRender().setRender_type(CRender.RENDER_TYPE.CODEC);
+
+                String mime = VideoUtil.findVideoCodecName(codecName);
+
+                mediaFormat = MediaFormat.createVideoFormat(mime,width,height);
+                mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,width * height);
+                mediaFormat.setByteBuffer("csd-0",ByteBuffer.wrap(csd_0));
+                mediaFormat.setByteBuffer("csd-1",ByteBuffer.wrap(csd_1));
+
+                mediaCodec = MediaCodec.createDecoderByType(mime);
+
+                outputBufferInfo = new MediaCodec.BufferInfo();
+
+                mediaCodec.configure(
+                        mediaFormat,
+                        surface,
+                        null,
+                        0
+                );
+
+
+
+                mediaCodec.start();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }else{
+
+        }
+
+    }
+
+
+
+    public void decodeVideo(byte[] data,int size){
+
+        if(surface != null && size > 0 && data != null && mediaCodec != null){
+
+            try{
+                int inputBufferIndex = mediaCodec.dequeueInputBuffer(10);
+
+                if(inputBufferIndex >= 0){
+
+                    ByteBuffer byteBuffer = mediaCodec.getInputBuffers()[inputBufferIndex];
+
+                    byteBuffer.clear();
+
+                    byteBuffer.put(data);
+
+                    mediaCodec.queueInputBuffer(inputBufferIndex,0,size,0,0);
+
+                }
+
+                int outputBufferIndex = mediaCodec.dequeueOutputBuffer(outputBufferInfo,10);
+
+                while(outputBufferIndex >= 0){
+
+                    mediaCodec.releaseOutputBuffer(outputBufferIndex,true);
+                    outputBufferIndex = mediaCodec.dequeueOutputBuffer(outputBufferInfo,10);
+
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+
+
+        }
+
+    }
+
+
+    private void releaseCodec(){
+
+        try {
+            if(mediaCodec != null){
+                mediaCodec.flush();
+                mediaCodec.stop();
+                mediaCodec.release();
+                mediaCodec = null;
+            }
+
+            if(mediaFormat != null){
+                mediaFormat = null;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+
+
     }
 
 }

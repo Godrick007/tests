@@ -202,7 +202,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void next(View view) {
 
-        test.playNext("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
+//        test.playNext("http://mpge.5nd.com/2015/2015-11-26/69708/1.mp3");
+        test.playNext(Environment.getExternalStorageDirectory().getAbsolutePath() + "/redis.mp4");
 
     }
 

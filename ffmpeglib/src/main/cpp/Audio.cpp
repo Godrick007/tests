@@ -40,13 +40,18 @@ void *decodePlay(void * data)
 //    instance->resampleAudio();
     instance->initSLES();
 
-    pthread_exit(&instance->thread_play);
+//    pthread_exit(&instance->thread_play);
+    return 0;
 }
 
 
 void Audio::play() {
 
-    pthread_create(&this->thread_play,NULL,decodePlay,this);
+    if(playStatus != NULL && !playStatus->exit){
+        pthread_create(&this->thread_play,NULL,decodePlay,this);
+    }
+
+
 
 }
 
@@ -476,7 +481,15 @@ void Audio::stop() {
 
 void Audio::release() {
 
-    stop();
+//    stop();
+    if(queue)
+    {
+        queue->noticeQueue();
+    }
+    pthread_join(thread_play,NULL);
+
+
+
     if(queue)
     {
         delete queue;

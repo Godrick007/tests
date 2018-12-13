@@ -45,6 +45,7 @@ public:
 
     int codecType = CODEC_YUV;
 
+    AVBSFContext *pBsCtx = NULL;
 
 public:
     Video(PlayStatus *playStatus,CallJava *callJava);
@@ -54,7 +55,7 @@ public:
 
     void release();
 
-    double getFrameDiffTime(AVFrame *avFrame);
+    double getFrameDiffTime(AVFrame *avFrame,AVPacket *avPacket);
 
     double getDelayTime(double diff);
 

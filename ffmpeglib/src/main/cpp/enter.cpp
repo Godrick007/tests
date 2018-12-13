@@ -69,7 +69,8 @@ void *startCallback(void * data)
 {
     Ffmpeg *ffmpeg = static_cast<Ffmpeg *>(data);
     ffmpeg->start();
-    pthread_exit(&threadStart);
+//    pthread_exit(&threadStart);
+    return 0;
 }
 
 extern "C"
@@ -119,11 +120,12 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1stop(JNIEnv *env, jobject instance
     nativeExit = false;
 
     if(ffmpeg)
+    {
         ffmpeg->release();
-
-    delete ffmpeg;
-
-    ffmpeg = NULL;
+        pthread_join(threadStart,NULL);
+        delete ffmpeg;
+        ffmpeg = NULL;
+    }
 
     if(callJava)
     {

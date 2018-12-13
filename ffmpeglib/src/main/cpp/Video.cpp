@@ -74,10 +74,37 @@ void *playVideo(void *data)
 
         if(video->codecType == CODEC_MEDIA_CODEC)
         {
+
+            if(av_bsf_send_packet(video->pBsCtx,pPacket) != 0)
+            {
+                av_packet_free(&pPacket);
+                av_free(pPacket);
+                pPacket = NULL;
+                continue;
+            }
+
+
+            while(av_bsf_receive_packet(video->pBsCtx,pPacket) == 0)
+            {
+
+
+                double diff = video->getFrameDiffTime(NULL,pPacket);
+
+                av_usleep(video->getDelayTime(diff) * AV_TIME_BASE);
+
+                video->callJava->callJavaDecodeVideo(pPacket->data,pPacket->size);
+                av_packet_free(&pPacket);
+                av_free(pPacket);
+                continue;
+
+
+            }
+            pPacket = NULL;
+
+
             av_packet_free(&pPacket);
             av_free(pPacket);
             pPacket = NULL;
-
 
         }
         else if(video->codecType == CODEC_YUV)
@@ -113,7 +140,7 @@ void *playVideo(void *data)
             {
 
 
-                double diff = video->getFrameDiffTime(pFrame);
+                double diff = video->getFrameDiffTime(pFrame,NULL);
 
                 if(LOG_DEBUG)
                 {
@@ -194,7 +221,7 @@ void *playVideo(void *data)
 //                LOGE("video","this is NOT a yuv data");
                 }
 
-                double diff = video->getFrameDiffTime(pFrame);
+                double diff = video->getFrameDiffTime(pFrame,NULL);
 
                 if(LOG_DEBUG)
                 {
@@ -236,21 +263,36 @@ void *playVideo(void *data)
 
     }
 
-    pthread_exit(&video->thread_play);
-
+    //pthread_exit(&video->thread_play);
+    return 0;
 }
 
 
 void Video::play() {
-    pthread_create(&this->thread_play,NULL,playVideo,this);
+    if(playStatus != NULL && !playStatus->exit)
+    {
+        pthread_create(&this->thread_play,NULL,playVideo,this);
+    }
 }
 
 void Video::release() {
+
+    if(pQueue)
+    {
+        pQueue->noticeQueue();
+    }
+    pthread_join(thread_play,NULL);
 
     if(this->pQueue != NULL)
     {
         delete pQueue;
         pQueue = NULL;
+    }
+
+    if(this->pBsCtx != NULL)
+    {
+        av_bsf_free(&pBsCtx);
+        pBsCtx = NULL;
     }
 
 
@@ -277,11 +319,15 @@ void Video::release() {
 
 }
 
-double Video::getFrameDiffTime(AVFrame *avFrame)
+double Video::getFrameDiffTime(AVFrame *avFrame,AVPacket *avPacket)
 {
+    double pts = 0;
+    if(avFrame != NULL){
+        pts = av_frame_get_best_effort_timestamp(avFrame);
+    } else if(avPacket != NULL){
+        pts = avPacket->pts;
+    }
 
-
-    double pts = av_frame_get_best_effort_timestamp(avFrame);
 
     if(pts == AV_NOPTS_VALUE)
     {

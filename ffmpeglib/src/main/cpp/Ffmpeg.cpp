@@ -13,7 +13,8 @@ Ffmpeg::Ffmpeg(PlayStatus *playStatus,CallJava *cj, const char *url) {
 void *decodeFfmpeg(void *data) {
     Ffmpeg *ffmpeg = (Ffmpeg *) (data);
     ffmpeg->decodeFfmpegThread();
-    pthread_exit(&ffmpeg->threadDecode);
+//    pthread_exit(&ffmpeg->threadDecode);
+    return 0;
 }
 
 void Ffmpeg::prepared() {
@@ -155,8 +156,76 @@ void Ffmpeg::start() {
 
     video->audio = audio;
 
+    const char *codecName = video->pCodecContext->codec->name;
 
-    video->codecType = callJava->callJavaCheckSupportVideo(video->pCodecContext->codec->name)? CODEC_MEDIA_CODEC : CODEC_YUV;
+
+    video->codecType = callJava->callJavaCheckSupportVideo(codecName)? CODEC_MEDIA_CODEC : CODEC_YUV;
+
+
+    if(video->codecType)
+    {
+
+        if(LOG_DEBUG)
+        {
+            LOGE("ffmpeg","device support hard codec");
+        }
+
+
+
+        if(strcasecmp(codecName,"h264") == 0)
+        {
+            pBsFilter = av_bsf_get_by_name("h264_mp4toannexb");
+        }
+        else if(strcasecmp(codecName,"h265") == 0)
+        {
+            pBsFilter = av_bsf_get_by_name("hevc_mp4toannexb");
+        }
+
+        if(pBsFilter == NULL)
+        {
+            //找不到解码器,失败
+            goto end;
+        }
+
+        if(av_bsf_alloc(pBsFilter,&video->pBsCtx) != 0)
+        {
+            //不支持,失败
+            av_bsf_free(&video->pBsCtx);
+            video->pBsCtx = NULL;
+            goto end;
+        }
+
+        if(avcodec_parameters_copy(video->pBsCtx->par_in,video->pCodecParameters) < 0)
+        {
+            //不支持,失败
+            av_bsf_free(&video->pBsCtx);
+            video->pBsCtx = NULL;
+            goto end;
+        }
+
+        if(av_bsf_init(video->pBsCtx) != 0)
+        {
+            //不支持,失败
+            av_bsf_free(&video->pBsCtx);
+            video->pBsCtx = NULL;
+            goto end;
+        }
+
+        video->pBsCtx->time_base_in = video->timeBase;
+
+        video->callJava->callJavaInitMediaCodec(
+                codecName,
+                video->pCodecContext->width,
+                video->pCodecContext->height,
+                video->pCodecContext->extradata,
+                video->pCodecContext->extradata_size,
+                video->pCodecContext->extradata,
+                video->pCodecContext->extradata_size
+                );
+    }
+
+
+    end:
 
     if(!video->codecType)
     {
@@ -165,15 +234,6 @@ void Ffmpeg::start() {
             LOGE("ffmpeg","device support hard codec");
         }
     }
-    else
-    {
-        if(LOG_DEBUG)
-        {
-            LOGE("ffmpeg","device support hard codec");
-        }
-    }
-
-
 
     audio->play();
     video->play();
@@ -295,6 +355,8 @@ void Ffmpeg::release() {
 
 
     playStatus->exit = true;
+
+    pthread_join(threadDecode,NULL);
 
 
     pthread_mutex_lock(&mutexInit);

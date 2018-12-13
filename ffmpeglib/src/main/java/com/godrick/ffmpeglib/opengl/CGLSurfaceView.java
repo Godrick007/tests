@@ -25,6 +25,8 @@ public class CGLSurfaceView extends GLSurfaceView {
         setRenderer(render);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 
+        render.setOnRenderListener(this::requestRender);
+
     }
 
     public void setYuvData(int width,int height,byte[] y,byte[] u,byte[] v){
@@ -34,6 +36,10 @@ public class CGLSurfaceView extends GLSurfaceView {
             requestRender();
         }
 
+    }
+
+    public CRender getRender(){
+        return render;
     }
 
 }

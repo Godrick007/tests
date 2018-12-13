@@ -37,6 +37,10 @@ public:
 
     Video *video = NULL;
 
+    const AVBitStreamFilter *pBsFilter = NULL;
+
+
+
 
 public:
     Ffmpeg(PlayStatus *playStatus,CallJava *cj, const char *url);

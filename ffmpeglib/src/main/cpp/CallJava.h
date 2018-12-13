@@ -25,6 +25,8 @@ public:
     jmethodID mid_pcm2AAC;
     jmethodID mid_yuv;
     jmethodID mid_support_video;
+    jmethodID mid_initVideoCodec;
+    jmethodID mid_decodeVideo;
 
 public:
     CallJava(JavaVM *jvm, JNIEnv *jniEnv,jobject *obj);
@@ -49,6 +51,12 @@ public:
 
     bool callJavaCheckSupportVideoUIThread(const char *codeName);
     bool callJavaCheckSupportVideo(const char *codeName);
+
+    void callJavaInitMediaCodecUIThread(const char *codecName, int width, int height, uint8_t *csd_0,uint8_t *csd_1);
+    void callJavaInitMediaCodec(const char *codecName, int width, int height, uint8_t *csd_0, int csd_0_len,uint8_t *csd_1, int csd_1_len);
+
+    void callJavaDecodeVideo(uint8_t *data, int size);
+
 };
 
 
