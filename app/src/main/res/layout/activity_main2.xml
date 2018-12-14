@@ -3,9 +3,10 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.gaosiedu.gl.CGLSurfaceView
-        android:id="@+id/gl_surface_view"
+    <com.gaosiedu.myapplication.MyEGLSurfaceView
+        android:id="@+id/surface_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        />
 
 </LinearLayout>
