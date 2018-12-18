@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.godrick.pusher.camera.CameraView
+        android:id="@+id/camera_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+
+
+    <Button
+        android:layout_alignParentBottom="true"
+        android:id="@+id/btn_stop"
+        android:text="stop"
+        android:layout_width="match_parent"
+        android:layout_height="48dp" />
+
+    <Button
+        android:layout_above="@id/btn_stop"
+        android:id="@+id/btn_start"
+        android:text="record"
+        android:layout_width="match_parent"
+        android:layout_height="48dp" />
+
+</RelativeLayout>

@@ -6,7 +6,15 @@
     <com.gaosiedu.myapplication.MyEGLSurfaceView
         android:id="@+id/surface_view"
         android:layout_width="match_parent"
+        android:layout_weight="1"
         android:layout_height="match_parent"
         />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:id="@+id/ll_content"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"/>
+
 
 </LinearLayout>

@@ -62,7 +62,7 @@ public class ShaderUtil {
 
 
 
-    public static int loadShader(int shaderType,String source){
+    private static int loadShader(int shaderType,String source){
 
         int shader = GLES20.glCreateShader(shaderType);
         if(shader != 0){
@@ -109,14 +109,14 @@ public class ShaderUtil {
             GLES20.glAttachShader(program, fragmentShader);
             GLES20.glLinkProgram(program);
 
-            int[] linkStatus = new int[1];
-
-            GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0);
-            if (linkStatus[0] != GLES20.GL_TRUE) {
-                Log.e("gl", "program link error");
-                GLES20.glDeleteProgram(program);
-                return 0;
-            }
+//            int[] linkStatus = new int[1];
+//
+//            GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0);
+//            if (linkStatus[0] != GLES20.GL_TRUE) {
+//                Log.e("gl", "program link error");
+//                GLES20.glDeleteProgram(program);
+//                return 0;
+//            }
         }
 
         return program;

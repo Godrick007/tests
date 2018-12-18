@@ -1,79 +1,84 @@
-package com.gaosiedu.myapplication;
+package com.godrick.pusher.camera;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.SurfaceTexture;
+import android.opengl.GLES11;
+import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
-import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.godrick.ffmpeglib.R;
 import com.godrick.ffmpeglib.opengl.ShaderUtil;
 import com.godrick.ffmpeglib.surface.EGLSurfaceView;
+import com.godrick.ffmpeglib.util.DisplayUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-public class MyRender implements EGLSurfaceView.EGLRender {
+public class CameraRender implements EGLSurfaceView.EGLRender ,SurfaceTexture.OnFrameAvailableListener{
 
 
     private final float[] vertex_data = {
             -1f, -1f,
             1f, -1f,
             -1f, 1f,
-            1f, 1f,
-
-            -0.5f,-0.5f,
-             0.5f,-0.5f,
-            -0.5f,0.5f,
-             0.5f,0.5f
-
+            1f, 1f
     };
 
     private final float[] texture_data = {
-//            0f, 0f,
-//            1f, 0f,
-//            0f, 1f,
-//            1f, 1f
-
-            0f,1f,
-            1f,1f,
-            0f,0f,
-            1f,0f
-
+            0f, 1f,
+            1f, 1f,
+            0f, 0f,
+            1f, 0f
     };
 
 
     private FloatBuffer vertexBuffer;
     private FloatBuffer textureBuffer;
 
-    private Context context;
 
 
     private int program;
     private int avPosition;
     private int afPosition;
-    private int textureId;
+    private int fboTextureId;
     private int sampler;
 
     private int VBOId;
     private int FBOId;
 
-    private FBORender fboRender;
+    private int u_matrix;
+    private float[] matrix = new float[16];
 
     private int imgTexture;
     private int imgTexture2;
 
 
-    private int u_matrix;
-    private float[] matrix = new float[16];
+    int cameraTextureId;
+
+    private SurfaceTexture surfaceTexture;
+
+    private Context context;
+
+    private OnSurfaceCreatedListener onSurfaceCreatedListener;
+
+    private CameraFBORender fboRender;
 
 
-    private OnRenderCreateListener onRenderCreateListener;
+    private int screen_width;
+    private int screen_height;
+    private int width;
+    private int height;
 
-    public MyRender(Context context) {
+
+    public CameraRender(Context context) {
         this.context = context;
+
+        screen_width = DisplayUtil.getScreenWidth(context);
+        screen_height = DisplayUtil.getScreenHeight(context);
+
         vertexBuffer = ByteBuffer.allocateDirect(vertex_data.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
@@ -86,25 +91,25 @@ public class MyRender implements EGLSurfaceView.EGLRender {
                 .put(texture_data);
         textureBuffer.position(0);
 
-        fboRender = new FBORender(context);
+        fboRender = new CameraFBORender(context);
 
+        resetMatrix();
     }
-
 
     @Override
     public void onSurfaceCreated() {
-        Log.e("render", "onSurfaceCreated");
 
         fboRender.onCreate();
 
-        String vertexSource = ShaderUtil.readRawText(context, R.raw.vertex2_m);
-        String textureSource = ShaderUtil.readRawText(context, R.raw.fragment2);
+        String vertexSource = ShaderUtil.readRawText(context, R.raw.vertex_shader2);
+        String textureSource = ShaderUtil.readRawText(context, R.raw.fragment_mediacodec);
 
         program = ShaderUtil.createProgram(vertexSource, textureSource);
 
-        avPosition = GLES20.glGetAttribLocation(program, "v_Position");
-        afPosition = GLES20.glGetAttribLocation(program, "f_Position");
+        avPosition = GLES20.glGetAttribLocation(program, "av_Position");
+        afPosition = GLES20.glGetAttribLocation(program, "af_Position");
         sampler = GLES20.glGetUniformLocation(program,"sTexture");
+
         u_matrix = GLES20.glGetUniformLocation(program,"u_Matrix");
 
 
@@ -125,7 +130,7 @@ public class MyRender implements EGLSurfaceView.EGLRender {
                 0,
                 vertex_data.length * 4,
                 vertexBuffer
-                );
+        );
 
         GLES20.glBufferSubData(
                 GLES20.GL_ARRAY_BUFFER,
@@ -143,14 +148,15 @@ public class MyRender implements EGLSurfaceView.EGLRender {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,FBOId);
 
 
+        int[] ms = new int[1];
 
 
 
         int[] textureIds = new int[1];
 
         GLES20.glGenTextures(1, textureIds, 0);
-        textureId = textureIds[0];
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
+        fboTextureId = textureIds[0];
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTextureId);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glUniform1i(sampler,0);
@@ -166,8 +172,8 @@ public class MyRender implements EGLSurfaceView.EGLRender {
                 GLES20.GL_TEXTURE_2D,
                 0,
                 GLES20.GL_RGBA,
-                1080,
-                1920,
+                screen_width,
+                screen_height,
                 0,
                 GLES20.GL_RGBA,
                 GLES20.GL_UNSIGNED_BYTE,
@@ -179,7 +185,7 @@ public class MyRender implements EGLSurfaceView.EGLRender {
                 GLES20.GL_FRAMEBUFFER,
                 GLES20.GL_COLOR_ATTACHMENT0,
                 GLES20.GL_TEXTURE_2D,
-                textureId,
+                fboTextureId,
                 0
         );
 
@@ -192,77 +198,50 @@ public class MyRender implements EGLSurfaceView.EGLRender {
             Log.e("opengl","fbo cool");
         }
 
-
-
-//        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(),R.mipmap.aa);
-//
-//        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D,0,bitmap,0);
-//
-//        bitmap.recycle();
-//        bitmap = null;
-
-
-
-
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0);
 
 
-        imgTexture = loadTexture(R.mipmap.aa);
-        imgTexture2 = loadTexture(R.mipmap.map);
+
+        int[] textureIdsEos = new int[1];
+
+        GLES20.glGenTextures(1,textureIdsEos,0);
 
 
-        if(onRenderCreateListener != null){
-            onRenderCreateListener.onCreate(textureId);
+        cameraTextureId = textureIdsEos[0];
+
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,cameraTextureId);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,GLES20.GL_TEXTURE_WRAP_S,GLES20.GL_REPEAT);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,GLES20.GL_TEXTURE_WRAP_T,GLES20.GL_REPEAT);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,GLES20.GL_TEXTURE_MIN_FILTER,GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,GLES20.GL_TEXTURE_MAG_FILTER,GLES20.GL_LINEAR);
+
+        surfaceTexture = new SurfaceTexture(cameraTextureId);
+
+        surfaceTexture.setOnFrameAvailableListener(this);
+
+        if(onSurfaceCreatedListener != null){
+            onSurfaceCreatedListener.onSurfaceCreated(surfaceTexture,fboTextureId);
         }
+
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,0);
+
     }
 
     @Override
     public void onSurfaceChanged(int width, int height) {
-        Log.e("render", "onSurfaceChanged");
-        fboRender.onChange(width,height);
-        GLES20.glViewport(0, 0, width, height);
-
-        if(width > height){
-
-            Matrix.orthoM(
-                    matrix,
-                    0,
-                    -width / (height / 424f * 578f),
-                    width / (height / 424f * 578f),
-                    -1f,
-                    1f,
-                    -1f,
-                    1f
-            );
-
-        }else{
-
-            Matrix.orthoM(
-                    matrix,
-                    0,
-                    -1f,
-                    1f,
-                    -height / (width / 578f * 424f),
-                    height / (width / 578f * 424f),
-                    -1f,
-                    1f
-            );
-
-        }
-
-//        Matrix.rotateM(matrix,0,180,0,0,1);
-//        Matrix.rotateM(matrix,0,180,0,1,0);
-        Matrix.rotateM(matrix,0,180,1,0,0);
-
-
+//        GLES20.glViewport(0,0,width,height);
+//        fboRender.onChange(width,height);
+        this.width = width;
+        this.height = height;
     }
 
     @Override
     public void onDrawFrame() {
-        Log.e("render", "onDrawFrame");
 
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,FBOId);
+        surfaceTexture.updateTexImage();
+
+
 
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(1.0f, 0f, 0f, 1f);
@@ -270,70 +249,63 @@ public class MyRender implements EGLSurfaceView.EGLRender {
 
         GLES20.glUseProgram(program);
 
+        GLES20.glViewport(0,0,screen_width,screen_height);
+
+
+
         GLES20.glUniformMatrix4fv(u_matrix,1,false,matrix,0);
 
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,FBOId);
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER,VBOId);
-
-
-        //绘制第一张图片
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,imgTexture);
-
         GLES20.glEnableVertexAttribArray(avPosition);
         GLES20.glVertexAttribPointer(avPosition, 2, GLES20.GL_FLOAT, false, 8, 0);
         GLES20.glEnableVertexAttribArray(afPosition);
         GLES20.glVertexAttribPointer(afPosition, 2, GLES20.GL_FLOAT, false, 8, vertex_data.length * 4);
 
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,fboTextureId);
 
 
-        //绘制第二张
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,imgTexture2);
-
-        GLES20.glEnableVertexAttribArray(avPosition);
-        GLES20.glVertexAttribPointer(avPosition, 2, GLES20.GL_FLOAT, false, 8, 32);
-        GLES20.glEnableVertexAttribArray(afPosition);
-        GLES20.glVertexAttribPointer(afPosition, 2, GLES20.GL_FLOAT, false, 8, vertex_data.length * 4);
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
 
 
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0);
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER,0);
 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0);
-        fboRender.onDrawFrame(textureId);
+
+
+        fboRender.onChange(width,height);
+        fboRender.onDrawFrame(fboTextureId);
 
     }
 
+    @Override
+    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
 
-    private int loadTexture(int src){
+    }
 
-        int[] textureIds = new int[1];
+    public void resetMatrix(){
+        Matrix.setIdentityM(matrix,0);
+    }
 
-        GLES20.glGenTextures(1, textureIds, 0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureIds[0]);
-
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_WRAP_S,GLES20.GL_REPEAT);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_WRAP_T,GLES20.GL_REPEAT);
-
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_MIN_FILTER,GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_MAG_FILTER,GLES20.GL_LINEAR);
-
-        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(),src);
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D,0,bitmap,0);
-
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0);
-
-        return textureIds[0];
+    public void setAngle(float angle,float x,float y,float z){
+        Matrix.rotateM(matrix,0,angle,x,y,z);
     }
 
 
-    public void setOnRenderCreateListener(OnRenderCreateListener onRenderCreateListener) {
-        this.onRenderCreateListener = onRenderCreateListener;
+    public int getFBOTextureId(){
+        return fboTextureId;
     }
 
-    public interface OnRenderCreateListener {
-        void onCreate(int textureId);
+
+    public void setOnSurfaceCreatedListener(OnSurfaceCreatedListener onSurfaceCreatedListener) {
+        this.onSurfaceCreatedListener = onSurfaceCreatedListener;
     }
 
+    public interface OnSurfaceCreatedListener{
+        void onSurfaceCreated(SurfaceTexture surfaceTexture,int textureId);
+    }
 }

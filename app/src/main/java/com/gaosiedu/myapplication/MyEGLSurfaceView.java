@@ -8,13 +8,7 @@ import com.godrick.ffmpeglib.surface.EGLSurfaceView;
 public class MyEGLSurfaceView extends EGLSurfaceView {
 
 
-
-
-
-
-
-
-    MyRender render;
+    private MyRender render;
 
 
     public MyEGLSurfaceView(Context context) {
@@ -36,6 +30,7 @@ public class MyEGLSurfaceView extends EGLSurfaceView {
 
     }
 
-
-
+    public MyRender getRender() {
+        return render;
+    }
 }
