@@ -1,6 +1,7 @@
 package com.godrick.pusher.camera;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11;
 import android.opengl.GLES11Ext;
@@ -12,6 +13,7 @@ import com.godrick.ffmpeglib.R;
 import com.godrick.ffmpeglib.opengl.ShaderUtil;
 import com.godrick.ffmpeglib.surface.EGLSurfaceView;
 import com.godrick.ffmpeglib.util.DisplayUtil;
+import com.godrick.ffmpeglib.util.ImageTextureUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

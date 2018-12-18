@@ -12,6 +12,7 @@ import android.view.Surface;
 import com.godrick.ffmpeglib.listeners.OnCompleteListener;
 import com.godrick.ffmpeglib.listeners.OnErrorListener;
 import com.godrick.ffmpeglib.listeners.OnLoadListener;
+import com.godrick.ffmpeglib.listeners.OnPCMCallback;
 import com.godrick.ffmpeglib.listeners.OnPauseResumeListener;
 import com.godrick.ffmpeglib.listeners.OnProgressListener;
 import com.godrick.ffmpeglib.listeners.OnRenderCallback;
@@ -71,6 +72,8 @@ public class NativeTest {
 
     private boolean isRecording = false;
 
+    private OnPCMCallback onPCMCallback;
+
     public NativeTest(Context context) {
         this.context = context;
     }
@@ -117,6 +120,10 @@ public class NativeTest {
         glSurfaceView.getRender().setOnSurfaceCreatedListener(surface -> {
             this.surface = surface;
         });
+    }
+
+    public void setOnPCMCallback(OnPCMCallback onPCMCallback) {
+        this.onPCMCallback = onPCMCallback;
     }
 
     public void prepared() {
@@ -355,6 +362,10 @@ public class NativeTest {
 
 
     private void onNativeCallEncodePCM2AAC(int size , byte[] buffer){
+
+            if(onPCMCallback != null){
+                onPCMCallback.onPCMCallback(buffer,size);
+            }
 
         if(buffer != null && encoder != null && isRecording)
         {

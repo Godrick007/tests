@@ -24,7 +24,7 @@ public class ImageTextureUtil {
         float bottom = paint.getFontMetrics().bottom;
 
         Bitmap bitmap = Bitmap.createBitmap(
-                (int)(width * padding * 2),
+                (int)(width + padding * 2),
                 (int) (bottom - top + padding *2),
                 Bitmap.Config.ARGB_8888
         );
