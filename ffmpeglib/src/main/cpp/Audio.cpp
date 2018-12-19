@@ -23,6 +23,8 @@ Audio::Audio(PlayStatus *playStatus,int sample_rate,CallJava *callJava)
     soundTouch->setPitch(pitch);
     soundTouch->setTempo(speed);
 
+
+
     pthread_mutex_init(&mutex_codec,NULL);
 
 }
@@ -563,6 +565,10 @@ void Audio::release() {
         callJava = NULL;
     }
 
+    if(recordBuffer)
+    {
+        delete recordBuffer;
+    }
 
 
 
@@ -732,8 +738,197 @@ int Audio::getPCMDB(char *pcmcate, size_t pcmSize) {
     return db;
 }
 
+
 void Audio::startStopRecord(bool state) {
 
     this->isRecord = state;
 
 }
+
+void *recordThreadCallback(void *data){
+
+    Audio *audio = static_cast<Audio *>(data);
+
+    audio->initRecord();
+
+    return 0;
+
+}
+
+void Audio::startMediaRecord() {
+
+    playStatus->record = true;
+
+    pthread_create(&thread_record,NULL,recordThreadCallback,this);
+
+}
+
+void Audio::stopMediaRecord() {
+
+
+    playStatus->record = false;
+
+}
+
+void recordBufferCallback(SLAndroidSimpleBufferQueueItf bq,void *context)
+{
+    Audio *audio = static_cast<Audio *>(context);
+
+    if(audio->playStatus->record)
+    {
+
+        LOGE("audio","recording");
+
+        audio->callJava->callJavaPCM2AAC(4096 * 2, audio->recordBuffer->getCacheBuffer());
+
+        (*audio->recordBufferQueue)->Enqueue(
+                audio->recordBufferQueue,
+                audio->recordBuffer->getRecordBuffer(),
+                4094 * 2
+        );
+
+    }
+    else
+    {
+        LOGE("audio","finish");
+
+        (*audio->mediaRecorder)->SetRecordState(
+                audio->mediaRecorder,
+                SL_RECORDSTATE_STOPPED
+        );
+
+    }
+}
+
+
+
+
+void Audio::initRecord() {
+
+    this->recordBuffer = new RecordBuffer( 4096 * 2);
+
+    SLresult result;
+
+    result = slCreateEngine(&this->engineObject,0,NULL,0,NULL,NULL);
+
+    LOGE("recorder","slCreateEngine is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+
+    result = (*engineObject)->Realize(this->engineObject,SL_BOOLEAN_FALSE);
+    LOGE("recorder","engineObject Realize is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    result = (*engineObject)->GetInterface(this->engineObject,SL_IID_ENGINE,&engineEngine);
+    LOGE("recorder","engineObject GetInterface is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+
+    SLDataLocator_IODevice loc_dev = {
+            SL_DATALOCATOR_IODEVICE,
+            SL_IODEVICE_AUDIOINPUT,
+            SL_DEFAULTDEVICEID_AUDIOINPUT,
+            NULL
+    };
+
+
+    SLDataSource audioSource = {&loc_dev,NULL};
+
+    SLDataLocator_AndroidSimpleBufferQueue loc_bufferQueue = {
+            SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
+            2
+    };
+
+    SLDataFormat_PCM format_pcm = {
+            SL_DATAFORMAT_PCM,
+            2,
+            SL_SAMPLINGRATE_44_1,
+            SL_PCMSAMPLEFORMAT_FIXED_16,
+            SL_PCMSAMPLEFORMAT_FIXED_16,
+            SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
+            SL_BYTEORDER_LITTLEENDIAN
+    };
+
+    SLDataSink audioSink = {
+            &loc_bufferQueue,
+            &format_pcm
+    };
+
+    SLInterfaceID  id[1] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE};
+    SLboolean req[1] = {SL_BOOLEAN_TRUE};
+
+    result = (*engineEngine)->CreateAudioRecorder(
+            engineEngine,
+            &this->mediaRecordObject,
+            &audioSource,
+            &audioSink,
+            1,
+            id,
+            req
+    );
+    LOGE("recorder","engineEngine CreateAudioRecorder is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+
+
+    result = (*mediaRecordObject)->Realize(mediaRecordObject,SL_BOOLEAN_FALSE);
+    LOGE("recorder","mediaRecordObject Realize is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    result = (*mediaRecordObject)->GetInterface(
+            mediaRecordObject,
+            SL_IID_RECORD,
+            &this->mediaRecorder
+            );
+    LOGE("recorder","mediaRecordObject Realize is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+
+
+    result = (*mediaRecordObject)->GetInterface(
+            mediaRecordObject,
+            SL_IID_ANDROIDSIMPLEBUFFERQUEUE,
+            &this->recordBufferQueue
+            );
+    LOGE("recorder","mediaRecordObject GetInterface is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+
+
+    result = (*recordBufferQueue)->Enqueue(
+            recordBufferQueue,
+            recordBuffer->getRecordBuffer(),
+            4096 * 2
+    );
+    LOGE("recorder","recordBufferQueue Enqueue is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    result = (*recordBufferQueue)->RegisterCallback(
+            recordBufferQueue,
+            recordBufferCallback,
+            this
+    );
+    LOGE("recorder","recordBufferQueue RegisterCallback is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+
+    result = (*mediaRecorder)->SetRecordState(
+            mediaRecorder,
+            SL_RECORDSTATE_RECORDING
+            );
+    LOGE("recorder","mediaRecorder SetRecordState is %d",result);
+    assert(SL_RESULT_SUCCESS == result);
+    (void)result;
+}
+
+
+
+

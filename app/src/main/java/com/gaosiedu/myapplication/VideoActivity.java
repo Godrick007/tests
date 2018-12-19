@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.Button;
 
 import com.godrick.ffmpeglib.NativeTest;
+import com.godrick.ffmpeglib.listeners.OnPCMCallback;
 import com.godrick.pusher.camera.CameraView;
 import com.godrick.pusher.encodec.BaseMediaEncoder;
 import com.godrick.pusher.encodec.MediaEncode;
@@ -39,12 +40,16 @@ public class VideoActivity extends AppCompatActivity implements View.OnClickList
 
         test = new NativeTest(this);
 
-        test.setOnSourcePreparedListener(()-> {
-            test.startRecord(new File(getCacheDir(),"1.mp3"));
-            test.start();
-        });
+        test.setOnPCMCallback((buffer, size) -> Log.e("video","pcm size is " + size));
 
-        requestPermissions(new String[]{Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE},100);
+        String[] permissions = new String[]{
+                Manifest.permission.CAMERA,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.RECORD_AUDIO
+        };
+
+        requestPermissions(permissions,100);
 
         btnStart = findViewById(R.id.btn_start);
         btnStop = findViewById(R.id.btn_stop);
@@ -53,11 +58,7 @@ public class VideoActivity extends AppCompatActivity implements View.OnClickList
         btnStop.setOnClickListener(this);
         btnStart.setOnClickListener(this);
 
-        test.setOnPCMCallback((buffer, size) -> {
 
-            mediaEncode.setPCMData(buffer,size);
-
-        });
 
     }
 
@@ -84,7 +85,7 @@ public class VideoActivity extends AppCompatActivity implements View.OnClickList
     private void stop() {
 
         if(test != null){
-            test.stop();
+            test.stopMediaRecord();
         }
 
        if(mediaEncode != null){
@@ -98,9 +99,11 @@ public class VideoActivity extends AppCompatActivity implements View.OnClickList
 
         if(test != null){
 
-            test.setSource(Environment.getExternalStorageDirectory().getAbsolutePath() + "/test.mp4");
+//            test.setSource(Environment.getExternalStorageDirectory().getAbsolutePath() + "/redis.mp4");
 //            test.setSource("");
-            test.prepared();
+//            test.prepared();
+
+            test.startMediaRecord();
 
         }
 
@@ -112,8 +115,14 @@ public class VideoActivity extends AppCompatActivity implements View.OnClickList
 //            mediaEncode.setOnMediaInfoListener(time -> Log.e("video",String.format("time is %d",time)));
             mediaEncode.initEncoder(cameraView.getEglContext(),
                     Environment.getExternalStorageDirectory().getAbsolutePath() + "/testaaa.mp4",
-                    MediaFormat.MIMETYPE_VIDEO_AVC,1080,1920,44100,2);
+                    MediaFormat.MIMETYPE_VIDEO_AVC,720,1280,44100,2);
             mediaEncode.startRecord();
+
+            test.setOnPCMCallback((buffer, size) -> {
+
+                mediaEncode.setPCMData(buffer,size);
+
+            });
         }
 
     }

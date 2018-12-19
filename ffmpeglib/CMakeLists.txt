@@ -45,6 +45,7 @@ add_library( # Sets the name of the library.
         ../ffmpeglib/src/main/cpp/Audio.cpp
         ../ffmpeglib/src/main/cpp/Video.cpp
         ../ffmpeglib/src/main/cpp/CallJava.cpp
+        ../ffmpeglib/src/main/cpp/RecordBuffer.cpp
         )
 
 add_library(

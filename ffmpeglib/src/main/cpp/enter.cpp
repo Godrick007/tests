@@ -241,3 +241,45 @@ Java_com_godrick_ffmpeglib_NativeTest_native_1startStopRecord(JNIEnv *env, jobje
     }
 
 }
+
+Audio *audio = NULL;
+PlayStatus *recordState;
+CallJava *recordCallback;
+
+pthread_t thread_record;
+
+void *recordStart(void *data)
+{
+    Audio *audio = static_cast<Audio *>(data);
+    audio->startMediaRecord();
+    return 0;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1startMediaReocrd(JNIEnv *env, jobject instance) {
+
+
+
+    if(!audio)
+    {
+        recordState = new PlayStatus();
+        recordCallback = new CallJava(javaVm,env,&instance);
+        audio = new Audio(recordState,44100,recordCallback);
+    }
+
+    pthread_create(&thread_record,NULL,recordStart,audio);
+
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_godrick_ffmpeglib_NativeTest_native_1stopMediaRecord(JNIEnv *env, jobject instance) {
+
+    if(audio)
+    {
+        audio->stopMediaRecord();
+    }
+
+}

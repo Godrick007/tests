@@ -171,7 +171,7 @@ public abstract class BaseMediaEncoder {
             videoFormat = MediaFormat.createVideoFormat(mimeType,width,height);
             videoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
             videoFormat.setInteger(MediaFormat.KEY_BIT_RATE,width * height * 4);
-            videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE,30); //max value
+            videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE,24); //max value
             videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,1); // key frame interval / second
 
 
@@ -426,6 +426,7 @@ public abstract class BaseMediaEncoder {
                     videoTrackIndex = mediaMuxer.addTrack(videoCodec.getOutputFormat());
 
                     //test
+
 //                    mediaMuxer.start();
 //                    encoder.get().encoderStart = true;
 //                    Log.e("base media encoder","video thread start");

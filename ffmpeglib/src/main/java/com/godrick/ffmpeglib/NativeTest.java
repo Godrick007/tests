@@ -188,6 +188,14 @@ public class NativeTest {
         stop();
     }
 
+    public void startMediaRecord(){
+        new Thread(this::native_startMediaReocrd).start();
+    }
+
+    public void stopMediaRecord(){
+        new Thread(this::native_stopMediaRecord).start();
+    }
+
     public int getDuration(){
         return native_getDuration();
     }
@@ -261,6 +269,10 @@ public class NativeTest {
     private native int native_getSampleRate();
 
     private native void native_startStopRecord(boolean state);
+
+    private native void native_startMediaReocrd();
+
+    private native void native_stopMediaRecord();
 
     public void onNativeCallPrepared() {
         if (onSourcePreparedListener != null) {

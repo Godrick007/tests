@@ -574,3 +574,19 @@ int Ffmpeg::getCodecContext(AVCodecParameters *codecParameters, AVCodecContext *
     return 0;
 }
 
+void Ffmpeg::startMediaRecord() {
+
+    if(audio)
+    {
+        audio->startMediaRecord();
+    }
+}
+
+void Ffmpeg::stopMediaRecord() {
+
+    if(audio)
+    {
+        audio->stopMediaRecord();
+    }
+}
+

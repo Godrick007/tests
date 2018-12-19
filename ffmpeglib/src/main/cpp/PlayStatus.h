@@ -18,6 +18,7 @@ public:
 
     bool pause = false;
 
+    bool record = false;
 
 public:
 

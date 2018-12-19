@@ -81,6 +81,10 @@ public:
 
     int getCodecContext(AVCodecParameters *codecParameters,AVCodecContext **codecContext);
 
+    void startMediaRecord();
+
+    void stopMediaRecord();
+
 };
 
 

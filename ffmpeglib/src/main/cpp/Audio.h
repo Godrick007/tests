@@ -11,6 +11,7 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 #include "CallJava.h"
+#include "RecordBuffer.h"
 
 #include "SoundTouch.h"
 
@@ -61,6 +62,9 @@ public:
     SLEnvironmentalReverbSettings reverbSettings =
             SL_I3DL2_ENVIRONMENT_PRESET_STONECORRIDOR;
 
+
+
+
 //pcm
     SLObjectItf pcmPlayerObject = NULL;
     SLPlayItf pcmPlayerPlay = NULL;
@@ -91,6 +95,15 @@ public:
     bool  isRecord = false;
 
     pthread_mutex_t mutex_codec;
+
+    //record
+    SLObjectItf mediaRecordObject;
+    SLRecordItf mediaRecorder;
+    SLAndroidSimpleBufferQueueItf recordBufferQueue = NULL;
+    pthread_t thread_record;
+
+    RecordBuffer *recordBuffer;
+
 
 public:
 
@@ -127,6 +140,12 @@ public:
     int getPCMDB(char *pcmcate,size_t pcmSize);
 
     void startStopRecord(bool state);
+
+    void startMediaRecord();
+
+    void stopMediaRecord();
+
+    void initRecord();
 
 };
 
